@@ -1,5 +1,5 @@
-import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react'
-import type { AppState, Flow } from '../types'
+import { useReducer, useEffect, type ReactNode } from 'react'
+import type { AppState } from '../types'
 import { loadState, saveState, getFlows, getFlow } from '../services/storage'
 import {
   createFlow,
@@ -9,14 +9,8 @@ import {
   forkFlow,
   updateFlow,
 } from '../services/flows'
-
-type Action =
-  | { type: 'CREATE_FLOW'; name?: string }
-  | { type: 'DELETE_FLOW'; flowId: string }
-  | { type: 'SET_ACTIVE_FLOW'; flowId: string | null }
-  | { type: 'RENAME_FLOW'; flowId: string; name: string }
-  | { type: 'FORK_FLOW'; flowId: string; stepIndex: number; newName?: string }
-  | { type: 'UPDATE_FLOW'; flowId: string; updates: Partial<Flow> }
+import type { Action } from './types'
+import { AppContext } from './context'
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -41,15 +35,6 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
-interface AppContextValue {
-  state: AppState
-  flows: Flow[]
-  activeFlow: Flow | undefined
-  dispatch: React.Dispatch<Action>
-}
-
-const AppContext = createContext<AppContextValue | null>(null)
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, null, loadState)
 
@@ -58,7 +43,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     saveState(state)
   }, [state])
 
-  const value: AppContextValue = {
+  const value = {
     state,
     flows: getFlows(state),
     activeFlow: state.activeFlowId ? getFlow(state, state.activeFlowId) : undefined,
@@ -66,12 +51,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
-}
-
-export function useApp() {
-  const context = useContext(AppContext)
-  if (!context) {
-    throw new Error('useApp must be used within AppProvider')
-  }
-  return context
 }
