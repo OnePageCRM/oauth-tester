@@ -118,3 +118,21 @@ No special preset system - just flows and forking.
 - Actual OAuth server implementation
 - Support for OAuth 1.0
 - Mobile app testing
+
+## Acceptance Criteria
+
+### Code Quality
+- TypeScript strict mode, no `any` types
+- ESLint for code style and best practices
+- Prettier for formatting
+- All linters pass with zero warnings
+
+### Testing
+- Unit tests for services (storage, PKCE, OAuth logic)
+- Component tests for key UI interactions
+- Test runner: Vitest (Vite-native)
+
+### CI Ready
+- `npm run lint` - run all linters
+- `npm run test` - run all tests
+- `npm run build` - production build (must pass TypeScript)

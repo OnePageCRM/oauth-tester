@@ -1,10 +1,14 @@
 # OAuth 2.1 Flow Tester - Implementation Plan
 
 ## Phase 1: Project Setup
-- [ ] Initialize Vite + React + TypeScript project
-- [ ] Configure build for static output
-- [ ] Set up basic folder structure
-- [ ] Add `callback.html` to public folder
+- [x] Initialize Vite + React + TypeScript project
+- [x] Configure build for static output
+- [x] Set up basic folder structure
+- [x] Add `callback.html` to public folder
+- [ ] Set up ESLint (TypeScript + React rules)
+- [ ] Set up Prettier (formatting)
+- [ ] Set up Vitest (testing)
+- [ ] Add npm scripts: `lint`, `test`
 
 ## Phase 2: Core Data Layer
 - [ ] Define TypeScript types for Flow, Step, FlowState
@@ -104,7 +108,10 @@ oauth-tester/
 ├── index.html
 ├── package.json
 ├── tsconfig.json
-└── vite.config.ts
+├── vite.config.ts
+├── eslint.config.js
+├── .prettierrc
+└── .gitignore
 ```
 
 ## Implementation Order
