@@ -1,4 +1,4 @@
-import type { AppState, Flow } from '../types'
+import type { AppState, Flow, Step } from '../types'
 
 export type Action =
   | { type: 'CREATE_FLOW'; name?: string }
@@ -7,6 +7,8 @@ export type Action =
   | { type: 'RENAME_FLOW'; flowId: string; name: string }
   | { type: 'FORK_FLOW'; flowId: string; stepIndex: number; newName?: string }
   | { type: 'UPDATE_FLOW'; flowId: string; updates: Partial<Flow> }
+  | { type: 'UPDATE_STEP'; flowId: string; stepId: string; updates: Partial<Step> }
+  | { type: 'ADD_STEP'; flowId: string; step: Step }
 
 export interface AppContextValue {
   state: AppState

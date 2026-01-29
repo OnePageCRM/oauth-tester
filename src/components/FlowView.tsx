@@ -1,4 +1,5 @@
 import { useApp } from '../context/useApp'
+import { useFlowActions } from '../hooks/useFlowActions'
 import { FlowName } from './FlowName'
 import {
   StartStep,
@@ -16,6 +17,7 @@ import './FlowView.css'
 
 export function FlowView() {
   const { activeFlow, dispatch } = useApp()
+  const { handleStartSubmit, handleDiscover } = useFlowActions()
 
   if (!activeFlow) {
     return (
@@ -33,41 +35,33 @@ export function FlowView() {
     dispatch({ type: 'FORK_FLOW', flowId: activeFlow.id, stepIndex })
   }
 
-  // Placeholder handlers - will be implemented in Phase 5
-  const handleStartSubmit = (_serverUrl: string) => {
-    // TODO: Phase 5
-  }
-
-  const handleDiscover = () => {
-    // TODO: Phase 5
-  }
-
+  // Placeholder handlers - will be implemented in later phases
   const handleRegister = () => {
-    // TODO: Phase 5
+    // TODO: Phase 5.2
   }
 
   const handleManualCredentials = () => {
-    // TODO: Phase 5
+    // TODO: Phase 5.2
   }
 
   const handleAuthorize = (_scope: string) => {
-    // TODO: Phase 5
+    // TODO: Phase 5.3
   }
 
   const handleTokenExchange = () => {
-    // TODO: Phase 5
+    // TODO: Phase 5.5
   }
 
   const handleRefresh = () => {
-    // TODO: Phase 5
+    // TODO: Phase 5.6
   }
 
   const handleIntrospect = () => {
-    // TODO: Phase 5
+    // TODO: Phase 5.7
   }
 
   const handleRevoke = () => {
-    // TODO: Phase 5
+    // TODO: Phase 5.8
   }
 
   const renderStep = (step: Step, index: number) => {

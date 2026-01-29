@@ -30,11 +30,11 @@
 
 ## Phase 5: OAuth Steps Implementation
 
-### 5.1 Discovery
-- [ ] Input: authorization server base URL
-- [ ] Fetch `.well-known/oauth-authorization-server`
-- [ ] Display metadata (endpoints, supported features)
-- [ ] Store metadata in flow state
+### 5.1 Discovery ✓
+- [x] Input: authorization server base URL
+- [x] Fetch `.well-known/oauth-authorization-server` (with OIDC fallback)
+- [x] Display metadata (endpoints, supported features)
+- [x] Store metadata in flow state
 
 ### 5.2 Registration
 - [ ] Option A: Dynamic registration (POST to registration endpoint)

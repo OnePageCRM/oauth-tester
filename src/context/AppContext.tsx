@@ -8,6 +8,8 @@ import {
   renameFlow,
   forkFlow,
   updateFlow,
+  addStep,
+  updateStep,
 } from '../services/flows'
 import type { Action } from './types'
 import { AppContext } from './context'
@@ -30,6 +32,10 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'UPDATE_FLOW':
       return updateFlow(state, action.flowId, action.updates)
+    case 'UPDATE_STEP':
+      return updateStep(state, action.flowId, action.stepId, action.updates)
+    case 'ADD_STEP':
+      return addStep(state, action.flowId, action.step)
     default:
       return state
   }
