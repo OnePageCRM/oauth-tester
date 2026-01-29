@@ -47,11 +47,11 @@
 - [x] Save state to localStorage before redirect
 - [x] Redirect to authorization server
 
-### 5.4 Callback Handling
-- [ ] `callback.html`: read URL params (code, state, error)
-  - [ ] Store result in localStorage
-- [ ] Redirect back to main app
-- [ ] Main app: detect callback, load result, continue flow
+### 5.4 Callback Handling ✓
+- [x] `callback.html`: read URL params (code, state, error)
+  - [x] Store result in localStorage
+- [x] Redirect back to main app
+- [x] Main app: detect callback, load result, continue flow
 
 ### 5.5 Token Exchange
 - [ ] POST to token endpoint (code, code_verifier, client credentials)

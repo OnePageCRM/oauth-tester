@@ -10,34 +10,25 @@ interface CallbackStepProps {
 
 export function CallbackStep({ step, index, onFork }: CallbackStepProps) {
   const isComplete = step.status === 'complete'
-  const isError = step.status === 'error'
+  const isPending = step.status === 'pending'
 
   return (
     <StepBase step={step} index={index} title="Callback" onFork={onFork}>
       {isComplete && step.code ? (
-        <div className="step-result">
+        <div className="metadata-grid">
           <div className="metadata-item">
             <label>Authorization Code</label>
-            <div className="step-value mono truncate">{step.code}</div>
+            <div className="step-value">{step.code}</div>
           </div>
         </div>
-      ) : isError ? (
-        <div className="step-result">
-          <div className="metadata-grid">
-            <div className="metadata-item">
-              <label>Error</label>
-              <div className="step-value error">{step.error}</div>
-            </div>
-            {step.errorDescription && (
-              <div className="metadata-item">
-                <label>Error Description</label>
-                <div className="step-value">{step.errorDescription}</div>
-              </div>
-            )}
-          </div>
+      ) : isPending ? (
+        <div className="step-form">
+          <p className="step-description">
+            Waiting for authorization callback. Complete the login on the authorization server.
+          </p>
         </div>
       ) : (
-        <div className="step-loading">Waiting for authorization callback...</div>
+        <div className="step-loading">Processing callback...</div>
       )}
     </StepBase>
   )
