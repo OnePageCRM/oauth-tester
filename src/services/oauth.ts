@@ -1,4 +1,10 @@
-import type { ServerMetadata, HttpExchange, HttpRequest, HttpResponse } from '../types'
+import type {
+  ServerMetadata,
+  HttpExchange,
+  HttpRequest,
+  HttpResponse,
+  ClientCredentials,
+} from '../types'
 
 // Build a well-known URL for OAuth metadata discovery
 export function buildDiscoveryUrl(serverUrl: string): string {
@@ -115,4 +121,50 @@ export async function discoverMetadata(
 
     throw error
   }
+}
+
+// Get the callback URL for this app
+export function getCallbackUrl(): string {
+  return `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}/callback.html`
+}
+
+// Dynamic client registration (RFC 7591)
+export async function registerClient(
+  registrationEndpoint: string
+): Promise<{ credentials: ClientCredentials; exchange: HttpExchange }> {
+  const callbackUrl = getCallbackUrl()
+
+  const requestBody = {
+    redirect_uris: [callbackUrl],
+    client_name: 'OAuth Tester',
+    token_endpoint_auth_method: 'client_secret_basic',
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+  }
+
+  const request: HttpRequest = {
+    method: 'POST',
+    url: registrationEndpoint,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  }
+
+  const { data, exchange } = await fetchWithCapture(request)
+
+  const responseData = data as Record<string, unknown>
+
+  if (!responseData.client_id) {
+    throw new FetchError('Registration response missing client_id', exchange)
+  }
+
+  const credentials: ClientCredentials = {
+    client_id: responseData.client_id as string,
+    client_secret: responseData.client_secret as string | undefined,
+    redirect_uris: responseData.redirect_uris as string[] | undefined,
+  }
+
+  return { credentials, exchange }
 }

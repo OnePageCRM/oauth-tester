@@ -1,8 +1,15 @@
 import { useCallback } from 'react'
 import { useApp } from '../context/useApp'
 import { generateId } from '../services/flows'
-import { discoverMetadata, FetchError } from '../services/oauth'
-import type { Flow, Step, DiscoveryStep, RegistrationStep } from '../types'
+import { discoverMetadata, registerClient, FetchError } from '../services/oauth'
+import type {
+  Flow,
+  Step,
+  DiscoveryStep,
+  RegistrationStep,
+  AuthorizationStep,
+  ClientCredentials,
+} from '../types'
 
 export function useFlowActions() {
   const { activeFlow, dispatch } = useApp()
@@ -179,10 +186,115 @@ export function useFlowActions() {
     }
   }, [activeFlow, updateStep, updateFlow, addStep])
 
+  // Reset Registration step
+  const handleResetRegistration = useCallback(() => {
+    if (!activeFlow) return
+    const registrationIndex = activeFlow.steps.findIndex((s) => s.type === 'registration')
+    if (registrationIndex === -1) return
+
+    const registrationStep = activeFlow.steps[registrationIndex]
+
+    // Reset to pending
+    updateStep(registrationStep.id, {
+      status: 'pending',
+      credentials: undefined,
+      httpExchange: undefined,
+      completedAt: undefined,
+      error: undefined,
+    } as Partial<Step>)
+
+    // Remove all steps after registration
+    truncateSteps(registrationIndex)
+
+    // Clear flow state that depends on registration
+    updateFlow({
+      credentials: undefined,
+      pkce: undefined,
+      tokens: undefined,
+    })
+  }, [activeFlow, updateStep, updateFlow, truncateSteps])
+
+  // Handle Dynamic Registration
+  const handleRegister = useCallback(async () => {
+    if (!activeFlow?.metadata?.registration_endpoint) return
+
+    const registrationStep = activeFlow.steps.find((s) => s.type === 'registration')
+    if (!registrationStep) return
+
+    // Mark as in progress
+    updateStep(registrationStep.id, { status: 'in_progress' })
+
+    try {
+      const { credentials, exchange } = await registerClient(
+        activeFlow.metadata.registration_endpoint
+      )
+
+      // Mark as complete
+      updateStep(registrationStep.id, {
+        status: 'complete',
+        mode: 'dynamic',
+        credentials,
+        httpExchange: exchange,
+        completedAt: Date.now(),
+      } as Partial<Step>)
+
+      // Update flow state
+      updateFlow({ credentials })
+
+      // Add authorization step
+      const authorizationStep: AuthorizationStep = {
+        id: generateId(),
+        type: 'authorization',
+        status: 'pending',
+      }
+      addStep(authorizationStep)
+    } catch (error) {
+      const exchange = error instanceof FetchError ? error.exchange : undefined
+      updateStep(registrationStep.id, {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Registration failed',
+        httpExchange: exchange,
+      } as Partial<Step>)
+    }
+  }, [activeFlow, updateStep, updateFlow, addStep])
+
+  // Handle Manual Credentials
+  const handleManualCredentials = useCallback(
+    (credentials: ClientCredentials) => {
+      if (!activeFlow) return
+
+      const registrationStep = activeFlow.steps.find((s) => s.type === 'registration')
+      if (!registrationStep) return
+
+      // Mark as complete
+      updateStep(registrationStep.id, {
+        status: 'complete',
+        mode: 'manual',
+        credentials,
+        completedAt: Date.now(),
+      } as Partial<Step>)
+
+      // Update flow state
+      updateFlow({ credentials })
+
+      // Add authorization step
+      const authorizationStep: AuthorizationStep = {
+        id: generateId(),
+        type: 'authorization',
+        status: 'pending',
+      }
+      addStep(authorizationStep)
+    },
+    [activeFlow, updateStep, updateFlow, addStep]
+  )
+
   return {
     handleStartSubmit,
     handleDiscover,
     handleResetStart,
     handleResetDiscovery,
+    handleRegister,
+    handleManualCredentials,
+    handleResetRegistration,
   }
 }

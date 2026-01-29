@@ -17,8 +17,15 @@ import './FlowView.css'
 
 export function FlowView() {
   const { activeFlow, dispatch } = useApp()
-  const { handleStartSubmit, handleDiscover, handleResetStart, handleResetDiscovery } =
-    useFlowActions()
+  const {
+    handleStartSubmit,
+    handleDiscover,
+    handleResetStart,
+    handleResetDiscovery,
+    handleRegister,
+    handleManualCredentials,
+    handleResetRegistration,
+  } = useFlowActions()
 
   if (!activeFlow) {
     return (
@@ -37,14 +44,6 @@ export function FlowView() {
   }
 
   // Placeholder handlers - will be implemented in later phases
-  const handleRegister = () => {
-    // TODO: Phase 5.2
-  }
-
-  const handleManualCredentials = () => {
-    // TODO: Phase 5.2
-  }
-
   const handleAuthorize = (_scope: string) => {
     // TODO: Phase 5.3
   }
@@ -100,6 +99,7 @@ export function FlowView() {
             onFork={onFork}
             onRegister={handleRegister}
             onManualCredentials={handleManualCredentials}
+            onReset={handleResetRegistration}
             hasRegistrationEndpoint={!!activeFlow.metadata?.registration_endpoint}
           />
         )

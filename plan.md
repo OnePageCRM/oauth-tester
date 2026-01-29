@@ -36,10 +36,10 @@
 - [x] Display metadata (endpoints, supported features)
 - [x] Store metadata in flow state
 
-### 5.2 Registration
-- [ ] Option A: Dynamic registration (POST to registration endpoint)
-- [ ] Option B: Manual input (client_id, client_secret)
-- [ ] Store client credentials in flow state
+### 5.2 Registration ✓
+- [x] Option A: Dynamic registration (POST to registration endpoint)
+- [x] Option B: Manual input (client_id, client_secret)
+- [x] Store client credentials in flow state
 
 ### 5.3 Authorization
 - [ ] Generate PKCE (code_verifier, code_challenge)
