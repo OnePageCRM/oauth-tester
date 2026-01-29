@@ -1,0 +1,27 @@
+.flow-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: text;
+  transition: background 0.15s;
+}
+
+.flow-name:hover {
+  background: #f0f0f0;
+}
+
+.flow-name-input {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  padding: 4px 8px;
+  border: 2px solid #2563eb;
+  border-radius: 4px;
+  outline: none;
+  width: 100%;
+  max-width: 400px;
+  font-family: inherit;
+}

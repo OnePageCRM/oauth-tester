@@ -16,11 +16,11 @@
 - [x] Flow CRUD operations (create, read, update, delete)
 - [x] Fork flow logic (copy steps up to point, new ID, inherit state)
 
-## Phase 3: UI Shell
-- [ ] Layout: sidebar + main content area
-- [ ] Sidebar: "New Flow" button + flow list (sorted by lastModified)
-- [ ] Main area: flow name (inline editable) + scrollable steps
-- [ ] Basic styling (clean, functional)
+## Phase 3: UI Shell ✓
+- [x] Layout: sidebar + main content area
+- [x] Sidebar: "New Flow" button + flow list (sorted by lastModified)
+- [x] Main area: flow name (inline editable) + scrollable steps
+- [x] Basic styling (clean, functional)
 
 ## Phase 4: Step Components
 - [ ] Base step component (title, fork button, expandable details)

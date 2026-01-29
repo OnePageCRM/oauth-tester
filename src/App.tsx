@@ -1,9 +1,15 @@
+import { AppProvider } from './context/AppContext'
+import { Layout } from './components/Layout'
+import { Sidebar } from './components/Sidebar'
+import { FlowView } from './components/FlowView'
+
 function App() {
   return (
-    <div>
-      <h1>OAuth 2.1 Flow Tester</h1>
-      <p>Phase 1 complete - project setup working.</p>
-    </div>
+    <AppProvider>
+      <Layout sidebar={<Sidebar />}>
+        <FlowView />
+      </Layout>
+    </AppProvider>
   )
 }
 
