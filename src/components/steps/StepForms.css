@@ -11,10 +11,10 @@
   gap: 16px;
 }
 
-/* Spacer to align non-array inputs with array inputs */
-.input-spacer {
-  width: 72px;
-  flex-shrink: 0;
+/* Non-array input alignment - adds right margin to match array button space */
+/* Two buttons (28px each) + 3.5 gaps (16px each) = 112px */
+.input-with-spacer {
+  margin-right: 112px;
 }
 
 .step-form label {
@@ -23,6 +23,11 @@
   font-size: 13px;
   font-weight: 500;
   color: #444;
+}
+
+.step-form label .required {
+  color: #dc2626;
+  margin-left: 2px;
 }
 
 .step-form input {

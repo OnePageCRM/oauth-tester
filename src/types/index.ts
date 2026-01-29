@@ -22,17 +22,23 @@ export interface ClientCredentials {
 
 // Dynamic client registration request (RFC 7591)
 export interface RegistrationRequest {
-  redirect_uris: string[]
-  client_name?: string
+  // Required for redirect-based flows (can be undefined to not send)
+  redirect_uris?: string[]
+  // Optional fields
   token_endpoint_auth_method?: string
   grant_types?: string[]
   response_types?: string[]
-  scope?: string
-  contacts?: string[]
+  client_name?: string
   client_uri?: string
   logo_uri?: string
+  scope?: string
+  contacts?: string[]
   tos_uri?: string
   policy_uri?: string
+  jwks_uri?: string
+  jwks?: string // JSON string for the JWK Set
+  software_id?: string
+  software_version?: string
 }
 
 // PKCE state

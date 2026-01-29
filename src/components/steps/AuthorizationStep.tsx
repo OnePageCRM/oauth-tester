@@ -97,16 +97,16 @@ export function AuthorizationStep({
             <input
               id="scope"
               type="text"
+              className="input-with-spacer"
               value={scope}
               onChange={(e) => setScope(e.target.value)}
               placeholder="openid profile email"
             />
-            <div className="input-spacer" />
           </div>
           {supportedScopes && supportedScopes.length > 0 && (
             <div className="form-row">
               <label>Supported</label>
-              <div className="scope-hints">
+              <div className="scope-hints input-with-spacer">
                 {supportedScopes.map((s) => (
                   <button
                     key={s}
@@ -118,7 +118,6 @@ export function AuthorizationStep({
                   </button>
                 ))}
               </div>
-              <div className="input-spacer" />
             </div>
           )}
           <div className="form-actions">

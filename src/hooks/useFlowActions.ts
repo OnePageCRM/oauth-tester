@@ -284,13 +284,14 @@ export function useFlowActions() {
       const registrationStep = activeFlow.steps.find((s) => s.type === 'registration')
       if (!registrationStep) return
 
-      // Mark as complete (clear any previous error)
+      // Mark as complete (clear any previous error and httpExchange since manual mode has no request)
       updateStep(registrationStep.id, {
         status: 'complete',
         mode: 'manual',
         credentials,
         completedAt: Date.now(),
         error: undefined,
+        httpExchange: undefined,
       } as Partial<Step>)
 
       // Update flow state

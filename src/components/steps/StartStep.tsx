@@ -56,6 +56,7 @@ export function StartStep({ step, index, onFork, onSubmit, onReset }: StartStepP
             <input
               id="server-url"
               type="url"
+              className="input-with-spacer"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://auth.example.com"

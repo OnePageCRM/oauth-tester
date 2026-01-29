@@ -203,45 +203,78 @@ export function getDefaultRegistrationRequest(): RegistrationRequest {
   }
 }
 
+// Process field value: empty string = skip, single space = send empty string, otherwise send value
+function processStringField(value: string | undefined): string | undefined {
+  if (value === undefined || value === '') return undefined
+  if (value === ' ') return ''
+  return value
+}
+
+// Process array field: filter empty items, single space item = empty string
+// - undefined → undefined (no inputs, don't send field)
+// - [''] → [] (empty input, send empty array)
+// - [' '] → [''] (space input, send array with empty string)
+// - ['value'] → ['value']
+function processArrayField(values: string[] | undefined): string[] | undefined {
+  if (values === undefined) return undefined // No inputs - don't send
+  const processed = values.filter((v) => v !== '').map((v) => (v === ' ' ? '' : v))
+  return processed // Return [] if all were empty (send empty array)
+}
+
 // Dynamic client registration (RFC 7591)
 export async function registerClient(
   registrationEndpoint: string,
   registrationRequest: RegistrationRequest
 ): Promise<{ credentials: ClientCredentials; exchange: HttpExchange }> {
-  // Filter out empty optional fields
-  const requestBody: Record<string, unknown> = {
-    redirect_uris: registrationRequest.redirect_uris,
+  const requestBody: Record<string, unknown> = {}
+
+  // redirect_uris - required for redirect-based flows
+  const redirectUris = processArrayField(registrationRequest.redirect_uris)
+  if (redirectUris) {
+    requestBody.redirect_uris = redirectUris
   }
 
-  if (registrationRequest.client_name) {
-    requestBody.client_name = registrationRequest.client_name
+  // String fields
+  const stringFields = [
+    'token_endpoint_auth_method',
+    'client_name',
+    'client_uri',
+    'logo_uri',
+    'scope',
+    'tos_uri',
+    'policy_uri',
+    'jwks_uri',
+    'software_id',
+    'software_version',
+  ] as const
+
+  for (const field of stringFields) {
+    const value = processStringField(registrationRequest[field])
+    if (value !== undefined) {
+      requestBody[field] = value
+    }
   }
-  if (registrationRequest.token_endpoint_auth_method) {
-    requestBody.token_endpoint_auth_method = registrationRequest.token_endpoint_auth_method
-  }
-  if (registrationRequest.grant_types?.length) {
-    requestBody.grant_types = registrationRequest.grant_types
-  }
-  if (registrationRequest.response_types?.length) {
-    requestBody.response_types = registrationRequest.response_types
-  }
-  if (registrationRequest.scope) {
-    requestBody.scope = registrationRequest.scope
-  }
-  if (registrationRequest.contacts?.length) {
-    requestBody.contacts = registrationRequest.contacts
-  }
-  if (registrationRequest.client_uri) {
-    requestBody.client_uri = registrationRequest.client_uri
-  }
-  if (registrationRequest.logo_uri) {
-    requestBody.logo_uri = registrationRequest.logo_uri
-  }
-  if (registrationRequest.tos_uri) {
-    requestBody.tos_uri = registrationRequest.tos_uri
-  }
-  if (registrationRequest.policy_uri) {
-    requestBody.policy_uri = registrationRequest.policy_uri
+
+  // Array fields
+  const grantTypes = processArrayField(registrationRequest.grant_types)
+  if (grantTypes) requestBody.grant_types = grantTypes
+
+  const responseTypes = processArrayField(registrationRequest.response_types)
+  if (responseTypes) requestBody.response_types = responseTypes
+
+  const contacts = processArrayField(registrationRequest.contacts)
+  if (contacts) requestBody.contacts = contacts
+
+  // JWKS - parse JSON string if provided
+  if (registrationRequest.jwks) {
+    const jwksValue = processStringField(registrationRequest.jwks)
+    if (jwksValue !== undefined) {
+      try {
+        requestBody.jwks = jwksValue === '' ? '' : JSON.parse(jwksValue)
+      } catch {
+        requestBody.jwks = jwksValue // Send as-is if not valid JSON
+      }
+    }
   }
 
   const request: HttpRequest = {
@@ -276,7 +309,7 @@ export interface AuthorizationParams {
   authorizationEndpoint: string
   clientId: string
   redirectUri: string
-  scope: string
+  scope: string // Empty string = omit, single space = send empty
   state: string
   pkce: PKCEState
 }
@@ -287,7 +320,13 @@ export function buildAuthorizationUrl(params: AuthorizationParams): string {
   url.searchParams.set('response_type', 'code')
   url.searchParams.set('client_id', params.clientId)
   url.searchParams.set('redirect_uri', params.redirectUri)
-  url.searchParams.set('scope', params.scope)
+
+  // Scope: empty string = omit, single space = send empty string
+  const scopeValue = processStringField(params.scope)
+  if (scopeValue !== undefined) {
+    url.searchParams.set('scope', scopeValue)
+  }
+
   url.searchParams.set('state', params.state)
   url.searchParams.set('code_challenge', params.pkce.code_challenge)
   url.searchParams.set('code_challenge_method', params.pkce.code_challenge_method)
