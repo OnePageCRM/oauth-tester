@@ -14,9 +14,7 @@ export function Sidebar() {
 
   const handleDeleteFlow = (e: React.MouseEvent, flowId: string) => {
     e.stopPropagation()
-    if (confirm('Delete this flow?')) {
-      dispatch({ type: 'DELETE_FLOW', flowId })
-    }
+    dispatch({ type: 'DELETE_FLOW', flowId })
   }
 
   const formatDate = (timestamp: number) => {
