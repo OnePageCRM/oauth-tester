@@ -4,6 +4,7 @@ import type {
   HttpRequest,
   HttpResponse,
   ClientCredentials,
+  RegistrationRequest,
 } from '../types'
 
 // Build a well-known URL for OAuth metadata discovery
@@ -128,18 +129,56 @@ export function getCallbackUrl(): string {
   return `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}/callback.html`
 }
 
-// Dynamic client registration (RFC 7591)
-export async function registerClient(
-  registrationEndpoint: string
-): Promise<{ credentials: ClientCredentials; exchange: HttpExchange }> {
-  const callbackUrl = getCallbackUrl()
-
-  const requestBody = {
-    redirect_uris: [callbackUrl],
+// Get default registration request
+export function getDefaultRegistrationRequest(): RegistrationRequest {
+  return {
+    redirect_uris: [getCallbackUrl()],
     client_name: 'OAuth Tester',
     token_endpoint_auth_method: 'client_secret_basic',
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
+  }
+}
+
+// Dynamic client registration (RFC 7591)
+export async function registerClient(
+  registrationEndpoint: string,
+  registrationRequest: RegistrationRequest
+): Promise<{ credentials: ClientCredentials; exchange: HttpExchange }> {
+  // Filter out empty optional fields
+  const requestBody: Record<string, unknown> = {
+    redirect_uris: registrationRequest.redirect_uris,
+  }
+
+  if (registrationRequest.client_name) {
+    requestBody.client_name = registrationRequest.client_name
+  }
+  if (registrationRequest.token_endpoint_auth_method) {
+    requestBody.token_endpoint_auth_method = registrationRequest.token_endpoint_auth_method
+  }
+  if (registrationRequest.grant_types?.length) {
+    requestBody.grant_types = registrationRequest.grant_types
+  }
+  if (registrationRequest.response_types?.length) {
+    requestBody.response_types = registrationRequest.response_types
+  }
+  if (registrationRequest.scope) {
+    requestBody.scope = registrationRequest.scope
+  }
+  if (registrationRequest.contacts?.length) {
+    requestBody.contacts = registrationRequest.contacts
+  }
+  if (registrationRequest.client_uri) {
+    requestBody.client_uri = registrationRequest.client_uri
+  }
+  if (registrationRequest.logo_uri) {
+    requestBody.logo_uri = registrationRequest.logo_uri
+  }
+  if (registrationRequest.tos_uri) {
+    requestBody.tos_uri = registrationRequest.tos_uri
+  }
+  if (registrationRequest.policy_uri) {
+    requestBody.policy_uri = registrationRequest.policy_uri
   }
 
   const request: HttpRequest = {

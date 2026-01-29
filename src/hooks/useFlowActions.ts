@@ -9,6 +9,7 @@ import type {
   RegistrationStep,
   AuthorizationStep,
   ClientCredentials,
+  RegistrationRequest,
 } from '../types'
 
 export function useFlowActions() {
@@ -215,48 +216,52 @@ export function useFlowActions() {
   }, [activeFlow, updateStep, updateFlow, truncateSteps])
 
   // Handle Dynamic Registration
-  const handleRegister = useCallback(async () => {
-    if (!activeFlow?.metadata?.registration_endpoint) return
+  const handleRegister = useCallback(
+    async (registrationRequest: RegistrationRequest) => {
+      if (!activeFlow?.metadata?.registration_endpoint) return
 
-    const registrationStep = activeFlow.steps.find((s) => s.type === 'registration')
-    if (!registrationStep) return
+      const registrationStep = activeFlow.steps.find((s) => s.type === 'registration')
+      if (!registrationStep) return
 
-    // Mark as in progress
-    updateStep(registrationStep.id, { status: 'in_progress' })
+      // Mark as in progress
+      updateStep(registrationStep.id, { status: 'in_progress' })
 
-    try {
-      const { credentials, exchange } = await registerClient(
-        activeFlow.metadata.registration_endpoint
-      )
+      try {
+        const { credentials, exchange } = await registerClient(
+          activeFlow.metadata.registration_endpoint,
+          registrationRequest
+        )
 
-      // Mark as complete
-      updateStep(registrationStep.id, {
-        status: 'complete',
-        mode: 'dynamic',
-        credentials,
-        httpExchange: exchange,
-        completedAt: Date.now(),
-      } as Partial<Step>)
+        // Mark as complete
+        updateStep(registrationStep.id, {
+          status: 'complete',
+          mode: 'dynamic',
+          credentials,
+          httpExchange: exchange,
+          completedAt: Date.now(),
+        } as Partial<Step>)
 
-      // Update flow state
-      updateFlow({ credentials })
+        // Update flow state
+        updateFlow({ credentials })
 
-      // Add authorization step
-      const authorizationStep: AuthorizationStep = {
-        id: generateId(),
-        type: 'authorization',
-        status: 'pending',
+        // Add authorization step
+        const authorizationStep: AuthorizationStep = {
+          id: generateId(),
+          type: 'authorization',
+          status: 'pending',
+        }
+        addStep(authorizationStep)
+      } catch (error) {
+        const exchange = error instanceof FetchError ? error.exchange : undefined
+        updateStep(registrationStep.id, {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Registration failed',
+          httpExchange: exchange,
+        } as Partial<Step>)
       }
-      addStep(authorizationStep)
-    } catch (error) {
-      const exchange = error instanceof FetchError ? error.exchange : undefined
-      updateStep(registrationStep.id, {
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Registration failed',
-        httpExchange: exchange,
-      } as Partial<Step>)
-    }
-  }, [activeFlow, updateStep, updateFlow, addStep])
+    },
+    [activeFlow, updateStep, updateFlow, addStep]
+  )
 
   // Handle Manual Credentials
   const handleManualCredentials = useCallback(

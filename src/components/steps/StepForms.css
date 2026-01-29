@@ -11,6 +11,12 @@
   gap: 16px;
 }
 
+/* Spacer to align non-array inputs with array inputs */
+.input-spacer {
+  width: 72px;
+  flex-shrink: 0;
+}
+
 .step-form label {
   width: 180px;
   flex-shrink: 0;
@@ -236,4 +242,79 @@
 
 .scope-hint:hover {
   background: #e0e0e0;
+}
+
+/* Select styling */
+.step-form select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.step-form select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* Array field styling */
+.array-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.array-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.array-btn.add {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.array-btn.add:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.array-btn.remove {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.array-btn.remove:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.array-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Registration form layout */
+.registration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }

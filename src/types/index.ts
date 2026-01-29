@@ -20,6 +20,21 @@ export interface ClientCredentials {
   redirect_uris?: string[]
 }
 
+// Dynamic client registration request (RFC 7591)
+export interface RegistrationRequest {
+  redirect_uris: string[]
+  client_name?: string
+  token_endpoint_auth_method?: string
+  grant_types?: string[]
+  response_types?: string[]
+  scope?: string
+  contacts?: string[]
+  client_uri?: string
+  logo_uri?: string
+  tos_uri?: string
+  policy_uri?: string
+}
+
 // PKCE state
 export interface PKCEState {
   code_verifier: string
