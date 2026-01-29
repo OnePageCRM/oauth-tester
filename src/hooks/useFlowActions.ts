@@ -158,12 +158,13 @@ export function useFlowActions() {
     try {
       const { metadata, exchange } = await discoverMetadata(activeFlow.serverUrl)
 
-      // Mark as complete with metadata
+      // Mark as complete with metadata (clear any previous error)
       updateStep(discoveryStep.id, {
         status: 'complete',
         metadata,
         httpExchange: exchange,
         completedAt: Date.now(),
+        error: undefined,
       } as Partial<Step>)
 
       // Update flow state
@@ -232,13 +233,14 @@ export function useFlowActions() {
           registrationRequest
         )
 
-        // Mark as complete
+        // Mark as complete (clear any previous error)
         updateStep(registrationStep.id, {
           status: 'complete',
           mode: 'dynamic',
           credentials,
           httpExchange: exchange,
           completedAt: Date.now(),
+          error: undefined,
         } as Partial<Step>)
 
         // Update flow state
@@ -271,12 +273,13 @@ export function useFlowActions() {
       const registrationStep = activeFlow.steps.find((s) => s.type === 'registration')
       if (!registrationStep) return
 
-      // Mark as complete
+      // Mark as complete (clear any previous error)
       updateStep(registrationStep.id, {
         status: 'complete',
         mode: 'manual',
         credentials,
         completedAt: Date.now(),
+        error: undefined,
       } as Partial<Step>)
 
       // Update flow state

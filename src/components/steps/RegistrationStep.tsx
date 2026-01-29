@@ -256,6 +256,27 @@ export function RegistrationStep({
                 <div className="input-spacer" />
               </div>
 
+              <div className="form-row">
+                <label htmlFor="client-uri">Client URI</label>
+                <input
+                  id="client-uri"
+                  type="url"
+                  value={regRequest.client_uri ?? ''}
+                  onChange={(e) => updateRegRequest({ client_uri: e.target.value })}
+                  placeholder="https://example.com"
+                />
+                <div className="input-spacer" />
+              </div>
+
+              <ArrayField
+                label="Contacts"
+                values={regRequest.contacts?.length ? regRequest.contacts : ['']}
+                onChange={(values) =>
+                  updateRegRequest({ contacts: values.filter((v) => v.trim()) })
+                }
+                placeholder="admin@example.com"
+              />
+
               <div className="form-actions">
                 <button
                   type="submit"
