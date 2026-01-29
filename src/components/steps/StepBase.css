@@ -5,6 +5,11 @@
   overflow: hidden;
 }
 
+.step.step-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
 .step-header {
   display: flex;
   align-items: center;
@@ -12,6 +17,11 @@
   padding: 12px 16px;
   background: #fafafa;
   border-bottom: 1px solid #e0e0e0;
+}
+
+.step.step-error .step-header {
+  background: #fee2e2;
+  border-bottom-color: #fecaca;
 }
 
 .step-number {
@@ -101,9 +111,10 @@
 
 .step-content {
   padding: 16px;
+  min-height: 48px;
 }
 
-.step-error {
+.step-error-message {
   margin: 0 16px 16px;
   padding: 12px;
   background: #fee2e2;

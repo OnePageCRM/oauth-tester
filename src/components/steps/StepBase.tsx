@@ -35,7 +35,7 @@ export function StepBase({ step, index, title, onFork, onReset, children }: Step
 
       <div className="step-content">{children}</div>
 
-      {step.error && <div className="step-error">{step.error}</div>}
+      {step.error && <div className="step-error-message">{step.error}</div>}
 
       {step.httpExchange && (
         <div className="step-details-toggle">
