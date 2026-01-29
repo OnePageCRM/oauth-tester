@@ -17,7 +17,8 @@ import './FlowView.css'
 
 export function FlowView() {
   const { activeFlow, dispatch } = useApp()
-  const { handleStartSubmit, handleDiscover } = useFlowActions()
+  const { handleStartSubmit, handleDiscover, handleResetStart, handleResetDiscovery } =
+    useFlowActions()
 
   if (!activeFlow) {
     return (
@@ -76,6 +77,7 @@ export function FlowView() {
             index={index}
             onFork={onFork}
             onSubmit={handleStartSubmit}
+            onReset={handleResetStart}
           />
         )
       case 'discovery':
@@ -86,6 +88,7 @@ export function FlowView() {
             index={index}
             onFork={onFork}
             onDiscover={handleDiscover}
+            onReset={handleResetDiscovery}
           />
         )
       case 'registration':

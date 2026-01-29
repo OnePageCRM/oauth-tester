@@ -127,7 +127,7 @@ describe('flows', () => {
       let state2 = addStep(state1, flow1.id, step2)
       state2 = addStep(state2, flow1.id, step3)
 
-      // Fork at step index 1 (includes steps 0 and 1)
+      // Fork at step index 1 (includes steps 0 and 1, forgets step 2)
       const result = forkFlow(state2, flow1.id, 1)
 
       expect(result).not.toBeNull()
@@ -135,6 +135,24 @@ describe('flows', () => {
       expect(result?.flow.parentFlowId).toBe(flow1.id)
       expect(result?.flow.parentStepIndex).toBe(1)
       expect(result?.state.activeFlowId).toBe(result?.flow.id)
+    })
+
+    it('sets forked step to pending for editing', () => {
+      const { state: state1, flow: flow1 } = createFlow(emptyState)
+
+      // Add a complete discovery step
+      const step2: DiscoveryStep = { id: 's2', type: 'discovery', status: 'complete' }
+      const state2 = addStep(state1, flow1.id, step2)
+
+      // Fork at step index 1 (the complete discovery step)
+      const result = forkFlow(state2, flow1.id, 1)
+
+      expect(result).not.toBeNull()
+      expect(result?.flow.steps).toHaveLength(2)
+      // Forked step should be set to pending for editing
+      expect(result?.flow.steps[1].status).toBe('pending')
+      // Previous steps keep their status
+      expect(result?.flow.steps[0].status).toBe('pending')
     })
 
     it('copies accumulated state', () => {

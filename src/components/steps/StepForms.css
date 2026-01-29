@@ -68,6 +68,17 @@
   background: #b91c1c;
 }
 
+.step-form button.secondary {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #d0d0d0;
+}
+
+.step-form button.secondary:hover:not(:disabled) {
+  background: #e5e5e5;
+  color: #333;
+}
+
 .form-actions {
   display: flex;
   gap: 8px;

@@ -44,6 +44,70 @@ export function useFlowActions() {
     [activeFlow, dispatch]
   )
 
+  // Remove steps after a given index (for reset)
+  const truncateSteps = useCallback(
+    (afterIndex: number) => {
+      if (!activeFlow) return
+      const newSteps = activeFlow.steps.slice(0, afterIndex + 1)
+      updateFlow({ steps: newSteps })
+    },
+    [activeFlow, updateFlow]
+  )
+
+  // Reset Start step - removes all subsequent steps
+  const handleResetStart = useCallback(() => {
+    if (!activeFlow) return
+    const startStep = activeFlow.steps.find((s) => s.type === 'start')
+    if (!startStep) return
+
+    // Reset to pending, clear data
+    updateStep(startStep.id, {
+      status: 'pending',
+      completedAt: undefined,
+    } as Partial<Step>)
+
+    // Remove all steps after start
+    truncateSteps(0)
+
+    // Clear flow state
+    updateFlow({
+      serverUrl: undefined,
+      metadata: undefined,
+      credentials: undefined,
+      pkce: undefined,
+      tokens: undefined,
+    })
+  }, [activeFlow, updateStep, updateFlow, truncateSteps])
+
+  // Reset Discovery step - removes all subsequent steps
+  const handleResetDiscovery = useCallback(() => {
+    if (!activeFlow) return
+    const discoveryIndex = activeFlow.steps.findIndex((s) => s.type === 'discovery')
+    if (discoveryIndex === -1) return
+
+    const discoveryStep = activeFlow.steps[discoveryIndex]
+
+    // Reset to pending
+    updateStep(discoveryStep.id, {
+      status: 'pending',
+      metadata: undefined,
+      httpExchange: undefined,
+      completedAt: undefined,
+      error: undefined,
+    } as Partial<Step>)
+
+    // Remove all steps after discovery
+    truncateSteps(discoveryIndex)
+
+    // Clear flow state that depends on discovery
+    updateFlow({
+      metadata: undefined,
+      credentials: undefined,
+      pkce: undefined,
+      tokens: undefined,
+    })
+  }, [activeFlow, updateStep, updateFlow, truncateSteps])
+
   // Handle Start step submission
   const handleStartSubmit = useCallback(
     async (serverUrl: string) => {
@@ -118,5 +182,7 @@ export function useFlowActions() {
   return {
     handleStartSubmit,
     handleDiscover,
+    handleResetStart,
+    handleResetDiscovery,
   }
 }

@@ -7,11 +7,13 @@ interface StepBaseProps {
   index: number
   title: string
   onFork: () => void
+  onReset?: () => void
   children: ReactNode
 }
 
-export function StepBase({ step, index, title, onFork, children }: StepBaseProps) {
+export function StepBase({ step, index, title, onFork, onReset, children }: StepBaseProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const canReset = step.status === 'complete' || step.status === 'error'
 
   return (
     <div className={`step step-${step.status}`}>
@@ -19,9 +21,16 @@ export function StepBase({ step, index, title, onFork, children }: StepBaseProps
         <span className="step-number">{index + 1}</span>
         <span className="step-title">{title}</span>
         <span className={`step-status status-${step.status}`}>{formatStatus(step.status)}</span>
-        <button className="step-fork" onClick={onFork} title="Fork from this step">
-          Fork
-        </button>
+        <div className="step-actions">
+          {canReset && onReset && (
+            <button className="step-reset" onClick={onReset} title="Reset and edit">
+              Edit
+            </button>
+          )}
+          <button className="step-fork" onClick={onFork} title="Fork from this step">
+            Fork
+          </button>
+        </div>
       </div>
 
       <div className="step-content">{children}</div>

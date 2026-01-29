@@ -113,9 +113,11 @@ export function forkFlow(
   const now = Date.now()
 
   // Copy steps up to and including the fork point
-  const copiedSteps = sourceFlow.steps.slice(0, stepIndex + 1).map((step) => ({
+  const copiedSteps = sourceFlow.steps.slice(0, stepIndex + 1).map((step, idx) => ({
     ...step,
     id: generateId(), // New IDs for copied steps
+    // Set the last step (forked step) to pending so it's in edit mode
+    status: idx === stepIndex ? 'pending' : step.status,
   }))
 
   const forkedFlow: Flow = {
