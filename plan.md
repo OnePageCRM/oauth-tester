@@ -22,11 +22,11 @@
 - [x] Main area: flow name (inline editable) + scrollable steps
 - [x] Basic styling (clean, functional)
 
-## Phase 4: Step Components
-- [ ] Base step component (title, fork button, expandable details)
-- [ ] Step state: pending / in-progress / complete / error
-- [ ] "Show details" expandable section (request/response)
-- [ ] Step-specific input forms
+## Phase 4: Step Components ✓
+- [x] Base step component (title, fork button, expandable details)
+- [x] Step state: pending / in-progress / complete / error
+- [x] "Show details" expandable section (request/response)
+- [x] Step-specific input forms (Start, Discovery, Registration, Authorization, Callback, Token, Refresh, Introspect, Revoke)
 
 ## Phase 5: OAuth Steps Implementation
 
