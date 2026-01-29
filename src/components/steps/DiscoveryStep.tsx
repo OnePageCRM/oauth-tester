@@ -16,49 +16,34 @@ export function DiscoveryStep({ step, index, onFork, onDiscover }: DiscoveryStep
   return (
     <StepBase step={step} index={index} title="Discovery" onFork={onFork}>
       {isComplete && step.metadata ? (
-        <div className="step-result">
-          <div className="metadata-grid">
-            <MetadataItem label="Issuer" value={step.metadata.issuer} />
+        <div className="metadata-grid">
+          <MetadataItem label="Issuer" value={step.metadata.issuer} />
+          <MetadataItem label="Authorization" value={step.metadata.authorization_endpoint} />
+          <MetadataItem label="Token" value={step.metadata.token_endpoint} />
+          {step.metadata.registration_endpoint && (
+            <MetadataItem label="Registration" value={step.metadata.registration_endpoint} />
+          )}
+          {step.metadata.introspection_endpoint && (
+            <MetadataItem label="Introspection" value={step.metadata.introspection_endpoint} />
+          )}
+          {step.metadata.revocation_endpoint && (
+            <MetadataItem label="Revocation" value={step.metadata.revocation_endpoint} />
+          )}
+          {step.metadata.scopes_supported && (
+            <MetadataItem label="Scopes" value={step.metadata.scopes_supported.join(', ')} />
+          )}
+          {step.metadata.code_challenge_methods_supported && (
             <MetadataItem
-              label="Authorization Endpoint"
-              value={step.metadata.authorization_endpoint}
+              label="PKCE Methods"
+              value={step.metadata.code_challenge_methods_supported.join(', ')}
             />
-            <MetadataItem label="Token Endpoint" value={step.metadata.token_endpoint} />
-            {step.metadata.registration_endpoint && (
-              <MetadataItem
-                label="Registration Endpoint"
-                value={step.metadata.registration_endpoint}
-              />
-            )}
-            {step.metadata.introspection_endpoint && (
-              <MetadataItem
-                label="Introspection Endpoint"
-                value={step.metadata.introspection_endpoint}
-              />
-            )}
-            {step.metadata.revocation_endpoint && (
-              <MetadataItem label="Revocation Endpoint" value={step.metadata.revocation_endpoint} />
-            )}
-            {step.metadata.scopes_supported && (
-              <MetadataItem
-                label="Scopes Supported"
-                value={step.metadata.scopes_supported.join(', ')}
-              />
-            )}
-            {step.metadata.code_challenge_methods_supported && (
-              <MetadataItem
-                label="PKCE Methods"
-                value={step.metadata.code_challenge_methods_supported.join(', ')}
-              />
-            )}
-          </div>
+          )}
         </div>
       ) : isPending ? (
         <div className="step-form">
-          <p className="step-description">
-            Fetch OAuth 2.0 Authorization Server Metadata from the well-known endpoint.
-          </p>
-          <button onClick={onDiscover}>Fetch Metadata</button>
+          <div className="form-actions" style={{ marginLeft: 0 }}>
+            <button onClick={onDiscover}>Fetch Metadata</button>
+          </div>
         </div>
       ) : (
         <div className="step-loading">Fetching metadata...</div>

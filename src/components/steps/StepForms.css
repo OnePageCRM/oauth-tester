@@ -2,21 +2,30 @@
 .step-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
+
+.step-form .form-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .step-form label {
+  width: 180px;
+  flex-shrink: 0;
   font-size: 13px;
   font-weight: 500;
   color: #444;
 }
 
 .step-form input {
-  padding: 10px 12px;
+  flex: 1;
+  padding: 8px 12px;
   border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
   transition: border-color 0.15s;
 }
 
@@ -31,13 +40,12 @@
 }
 
 .step-form button {
-  align-self: flex-start;
-  padding: 10px 20px;
+  padding: 8px 20px;
   background: #2563eb;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 4px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -58,6 +66,12 @@
 
 .step-form button.danger:hover:not(:disabled) {
   background: #b91c1c;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 196px;
 }
 
 .step-description {
@@ -125,22 +139,35 @@
   color: #16a34a;
 }
 
-/* Metadata grid */
+/* Metadata table */
 .metadata-grid {
-  display: grid;
-  gap: 16px;
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .metadata-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: table-row;
 }
 
 .metadata-item label {
-  font-size: 12px;
+  display: table-cell;
+  width: 180px;
+  padding: 6px 16px 6px 0;
+  font-size: 13px;
   font-weight: 500;
   color: #666;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.metadata-item .step-value {
+  display: table-cell;
+  padding: 6px 0;
+  font-size: 13px;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  color: #1a1a1a;
+  word-break: break-all;
 }
 
 /* Mode toggle */
