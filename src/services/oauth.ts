@@ -21,6 +21,61 @@ export function buildOIDCDiscoveryUrl(serverUrl: string): string {
   return `${url.origin}${path}/.well-known/openid-configuration`
 }
 
+// Format error message from OAuth error response or HTTP error
+function formatErrorMessage(status: number, statusText: string, data: unknown): string {
+  // Check for OAuth error response format (RFC 6749)
+  if (data && typeof data === 'object') {
+    const errorData = data as Record<string, unknown>
+    if (errorData.error) {
+      const error = String(errorData.error)
+      const description = errorData.error_description
+        ? String(errorData.error_description)
+        : undefined
+      return description ? `${error}: ${description}` : error
+    }
+    // Some servers return { message: "..." }
+    if (errorData.message) {
+      return String(errorData.message)
+    }
+  }
+  return `HTTP ${status}: ${statusText}`
+}
+
+// Check if URL is cross-origin
+function isCrossOrigin(url: string): boolean {
+  try {
+    const targetUrl = new URL(url)
+    return targetUrl.origin !== window.location.origin
+  } catch {
+    return false
+  }
+}
+
+// Format network error with more details
+function formatNetworkError(error: Error, requestUrl: string): string {
+  const message = error.message || 'Unknown error'
+
+  // Provide more context for common errors
+  if (message === 'Failed to fetch' || message.includes('NetworkError')) {
+    const crossOrigin = isCrossOrigin(requestUrl)
+    if (crossOrigin) {
+      try {
+        const target = new URL(requestUrl)
+        return `Failed to fetch: CORS error - server at ${target.origin} must include 'Access-Control-Allow-Origin' header`
+      } catch {
+        return 'Failed to fetch: CORS error - server must include Access-Control-Allow-Origin header'
+      }
+    }
+    return 'Failed to fetch: Server unreachable or connection refused'
+  }
+
+  if (message.includes('CORS')) {
+    return `Failed to fetch: ${message}`
+  }
+
+  return message
+}
+
 // Fetch with HTTP exchange capture
 async function fetchWithCapture(
   request: HttpRequest
@@ -57,7 +112,8 @@ async function fetchWithCapture(
     }
 
     if (!fetchResponse.ok) {
-      throw new FetchError(`HTTP ${fetchResponse.status}: ${fetchResponse.statusText}`, exchange)
+      const errorMessage = formatErrorMessage(fetchResponse.status, fetchResponse.statusText, data)
+      throw new FetchError(errorMessage, exchange)
     }
 
     return { response, data, exchange }
@@ -66,13 +122,18 @@ async function fetchWithCapture(
       throw error
     }
 
+    const errorMessage = formatNetworkError(
+      error instanceof Error ? error : new Error('Unknown error'),
+      request.url
+    )
+
     const exchange: HttpExchange = {
       request,
       timestamp,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
     }
 
-    throw new FetchError(error instanceof Error ? error.message : 'Unknown error', exchange)
+    throw new FetchError(errorMessage, exchange)
   }
 }
 
