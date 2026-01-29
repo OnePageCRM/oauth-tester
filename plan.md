@@ -10,11 +10,11 @@
 - [x] Set up Vitest (testing with happy-dom)
 - [x] Add npm scripts: `lint`, `lint:fix`, `test`, `test:watch`
 
-## Phase 2: Core Data Layer
-- [ ] Define TypeScript types for Flow, Step, FlowState
-- [ ] Implement localStorage service (save/load flows)
-- [ ] Flow CRUD operations (create, read, update, delete)
-- [ ] Fork flow logic (copy steps up to point, new ID, inherit state)
+## Phase 2: Core Data Layer ✓
+- [x] Define TypeScript types for Flow, Step, FlowState
+- [x] Implement localStorage service (save/load flows)
+- [x] Flow CRUD operations (create, read, update, delete)
+- [x] Fork flow logic (copy steps up to point, new ID, inherit state)
 
 ## Phase 3: UI Shell
 - [ ] Layout: sidebar + main content area
