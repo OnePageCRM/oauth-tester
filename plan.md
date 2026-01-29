@@ -41,15 +41,15 @@
 - [x] Option B: Manual input (client_id, client_secret)
 - [x] Store client credentials in flow state
 
-### 5.3 Authorization
-- [ ] Generate PKCE (code_verifier, code_challenge)
-- [ ] Build authorization URL (client_id, redirect_uri, scope, state, PKCE)
-- [ ] Save state to localStorage before redirect
-- [ ] Redirect to authorization server
+### 5.3 Authorization ✓
+- [x] Generate PKCE (code_verifier, code_challenge)
+- [x] Build authorization URL (client_id, redirect_uri, scope, state, PKCE)
+- [x] Save state to localStorage before redirect
+- [x] Redirect to authorization server
 
 ### 5.4 Callback Handling
 - [ ] `callback.html`: read URL params (code, state, error)
-- [ ] Store result in localStorage
+  - [ ] Store result in localStorage
 - [ ] Redirect back to main app
 - [ ] Main app: detect callback, load result, continue flow
 

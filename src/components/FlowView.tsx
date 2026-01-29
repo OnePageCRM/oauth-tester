@@ -25,6 +25,8 @@ export function FlowView() {
     handleRegister,
     handleManualCredentials,
     handleResetRegistration,
+    handleAuthorize,
+    handleResetAuthorization,
   } = useFlowActions()
 
   if (!activeFlow) {
@@ -44,10 +46,6 @@ export function FlowView() {
   }
 
   // Placeholder handlers - will be implemented in later phases
-  const handleAuthorize = (_scope: string) => {
-    // TODO: Phase 5.3
-  }
-
   const handleTokenExchange = () => {
     // TODO: Phase 5.5
   }
@@ -111,6 +109,7 @@ export function FlowView() {
             index={index}
             onFork={onFork}
             onAuthorize={handleAuthorize}
+            onReset={handleResetAuthorization}
             supportedScopes={activeFlow.metadata?.scopes_supported}
           />
         )

@@ -1,13 +1,22 @@
 import { useCallback } from 'react'
 import { useApp } from '../context/useApp'
 import { generateId } from '../services/flows'
-import { discoverMetadata, registerClient, FetchError } from '../services/oauth'
+import {
+  discoverMetadata,
+  registerClient,
+  buildAuthorizationUrl,
+  getCallbackUrl,
+  FetchError,
+} from '../services/oauth'
+import { generatePKCE, generateState } from '../services/pkce'
+import { saveRedirectState } from '../services/storage'
 import type {
   Flow,
   Step,
   DiscoveryStep,
   RegistrationStep,
   AuthorizationStep,
+  CallbackStep,
   ClientCredentials,
   RegistrationRequest,
 } from '../types'
@@ -296,6 +305,103 @@ export function useFlowActions() {
     [activeFlow, updateStep, updateFlow, addStep]
   )
 
+  // Reset Authorization step
+  const handleResetAuthorization = useCallback(() => {
+    if (!activeFlow) return
+    const authIndex = activeFlow.steps.findIndex((s) => s.type === 'authorization')
+    if (authIndex === -1) return
+
+    const authStep = activeFlow.steps[authIndex]
+
+    // Reset to pending
+    updateStep(authStep.id, {
+      status: 'pending',
+      pkce: undefined,
+      state: undefined,
+      scope: undefined,
+      authorizationUrl: undefined,
+      completedAt: undefined,
+      error: undefined,
+    } as Partial<Step>)
+
+    // Remove all steps after authorization
+    truncateSteps(authIndex)
+
+    // Clear flow state that depends on authorization
+    updateFlow({
+      pkce: undefined,
+      tokens: undefined,
+    })
+  }, [activeFlow, updateStep, updateFlow, truncateSteps])
+
+  // Handle Authorization - generate PKCE, build URL, redirect
+  const handleAuthorize = useCallback(
+    async (scope: string) => {
+      if (!activeFlow?.metadata?.authorization_endpoint || !activeFlow?.credentials) return
+
+      const authStep = activeFlow.steps.find((s) => s.type === 'authorization')
+      if (!authStep) return
+
+      // Mark as in progress
+      updateStep(authStep.id, { status: 'in_progress' })
+
+      try {
+        // Generate PKCE
+        const pkce = await generatePKCE()
+        const state = generateState()
+        const redirectUri = getCallbackUrl()
+
+        // Build authorization URL
+        const authorizationUrl = buildAuthorizationUrl({
+          authorizationEndpoint: activeFlow.metadata.authorization_endpoint,
+          clientId: activeFlow.credentials.client_id,
+          redirectUri,
+          scope,
+          state,
+          pkce,
+        })
+
+        // Save redirect state before navigating
+        saveRedirectState({
+          flowId: activeFlow.id,
+          codeVerifier: pkce.code_verifier,
+          state,
+        })
+
+        // Update step with authorization details
+        updateStep(authStep.id, {
+          status: 'complete',
+          pkce,
+          state,
+          scope,
+          authorizationUrl,
+          completedAt: Date.now(),
+          error: undefined,
+        } as Partial<Step>)
+
+        // Update flow state
+        updateFlow({ pkce })
+
+        // Add callback step (will be processed when user returns)
+        const callbackStep: CallbackStep = {
+          id: generateId(),
+          type: 'callback',
+          status: 'pending',
+        }
+        addStep(callbackStep)
+
+        // Redirect to authorization server
+        window.location.href = authorizationUrl
+      } catch (error) {
+        updateStep(authStep.id, {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Authorization failed',
+        } as Partial<Step>)
+      }
+    },
+    [activeFlow, updateStep, updateFlow, addStep]
+  )
+
   return {
     handleStartSubmit,
     handleDiscover,
@@ -304,5 +410,7 @@ export function useFlowActions() {
     handleRegister,
     handleManualCredentials,
     handleResetRegistration,
+    handleAuthorize,
+    handleResetAuthorization,
   }
 }

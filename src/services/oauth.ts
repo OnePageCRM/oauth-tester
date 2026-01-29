@@ -5,6 +5,7 @@ import type {
   HttpResponse,
   ClientCredentials,
   RegistrationRequest,
+  PKCEState,
 } from '../types'
 
 // Build a well-known URL for OAuth metadata discovery
@@ -267,4 +268,28 @@ export async function registerClient(
   }
 
   return { credentials, exchange }
+}
+
+// Build authorization URL for OAuth 2.1
+export interface AuthorizationParams {
+  authorizationEndpoint: string
+  clientId: string
+  redirectUri: string
+  scope: string
+  state: string
+  pkce: PKCEState
+}
+
+export function buildAuthorizationUrl(params: AuthorizationParams): string {
+  const url = new URL(params.authorizationEndpoint)
+
+  url.searchParams.set('response_type', 'code')
+  url.searchParams.set('client_id', params.clientId)
+  url.searchParams.set('redirect_uri', params.redirectUri)
+  url.searchParams.set('scope', params.scope)
+  url.searchParams.set('state', params.state)
+  url.searchParams.set('code_challenge', params.pkce.code_challenge)
+  url.searchParams.set('code_challenge_method', params.pkce.code_challenge_method)
+
+  return url.toString()
 }
