@@ -27,6 +27,8 @@ export function FlowView() {
     handleResetRegistration,
     handleAuthorize,
     handleResetAuthorization,
+    handleTokenExchange,
+    handleResetToken,
   } = useFlowActions()
 
   if (!activeFlow) {
@@ -46,10 +48,6 @@ export function FlowView() {
   }
 
   // Placeholder handlers - will be implemented in later phases
-  const handleTokenExchange = () => {
-    // TODO: Phase 5.5
-  }
-
   const handleRefresh = () => {
     // TODO: Phase 5.6
   }
@@ -123,6 +121,7 @@ export function FlowView() {
             index={index}
             onFork={onFork}
             onExchange={handleTokenExchange}
+            onReset={handleResetToken}
           />
         )
       case 'refresh':

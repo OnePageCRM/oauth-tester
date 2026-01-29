@@ -5,6 +5,7 @@ import {
   discoverMetadata,
   registerClient,
   buildAuthorizationUrl,
+  exchangeToken,
   getCallbackUrl,
   FetchError,
 } from '../services/oauth'
@@ -17,6 +18,7 @@ import type {
   RegistrationStep,
   AuthorizationStep,
   CallbackStep,
+  RefreshStep,
   ClientCredentials,
   RegistrationRequest,
 } from '../types'
@@ -402,6 +404,90 @@ export function useFlowActions() {
     [activeFlow, updateStep, updateFlow, addStep]
   )
 
+  // Reset Token step
+  const handleResetToken = useCallback(() => {
+    if (!activeFlow) return
+    const tokenIndex = activeFlow.steps.findIndex((s) => s.type === 'token')
+    if (tokenIndex === -1) return
+
+    const tokenStep = activeFlow.steps[tokenIndex]
+
+    // Reset to pending
+    updateStep(tokenStep.id, {
+      status: 'pending',
+      tokens: undefined,
+      httpExchange: undefined,
+      completedAt: undefined,
+      error: undefined,
+    } as Partial<Step>)
+
+    // Remove all steps after token
+    truncateSteps(tokenIndex)
+
+    // Clear tokens from flow state
+    updateFlow({
+      tokens: undefined,
+    })
+  }, [activeFlow, updateStep, updateFlow, truncateSteps])
+
+  // Handle Token Exchange
+  const handleTokenExchange = useCallback(async () => {
+    if (!activeFlow?.metadata?.token_endpoint || !activeFlow?.credentials || !activeFlow?.pkce)
+      return
+
+    // Find the callback step to get the code
+    const callbackStep = activeFlow.steps.find((s) => s.type === 'callback')
+    if (!callbackStep || callbackStep.status !== 'complete') return
+    const code = (callbackStep as CallbackStep).code
+    if (!code) return
+
+    const tokenStep = activeFlow.steps.find((s) => s.type === 'token')
+    if (!tokenStep) return
+
+    // Mark as in progress
+    updateStep(tokenStep.id, { status: 'in_progress' })
+
+    try {
+      const { tokens, exchange } = await exchangeToken({
+        tokenEndpoint: activeFlow.metadata.token_endpoint,
+        code,
+        redirectUri: getCallbackUrl(),
+        clientId: activeFlow.credentials.client_id,
+        clientSecret: activeFlow.credentials.client_secret,
+        codeVerifier: activeFlow.pkce.code_verifier,
+      })
+
+      // Mark as complete
+      updateStep(tokenStep.id, {
+        status: 'complete',
+        tokens,
+        httpExchange: exchange,
+        completedAt: Date.now(),
+        error: undefined,
+      } as Partial<Step>)
+
+      // Update flow state
+      updateFlow({ tokens })
+
+      // Add refresh step if we have a refresh token
+      if (tokens.refresh_token) {
+        const refreshStep: RefreshStep = {
+          id: generateId(),
+          type: 'refresh',
+          status: 'pending',
+        }
+        addStep(refreshStep)
+      }
+    } catch (error) {
+      const exchange = error instanceof FetchError ? error.exchange : undefined
+      updateStep(tokenStep.id, {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Token exchange failed',
+        httpExchange: exchange,
+      } as Partial<Step>)
+    }
+  }, [activeFlow, updateStep, updateFlow, addStep])
+
   return {
     handleStartSubmit,
     handleDiscover,
@@ -412,5 +498,7 @@ export function useFlowActions() {
     handleResetRegistration,
     handleAuthorize,
     handleResetAuthorization,
+    handleTokenExchange,
+    handleResetToken,
   }
 }

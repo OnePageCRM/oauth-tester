@@ -53,10 +53,10 @@
 - [x] Redirect back to main app
 - [x] Main app: detect callback, load result, continue flow
 
-### 5.5 Token Exchange
-- [ ] POST to token endpoint (code, code_verifier, client credentials)
-- [ ] Parse and display token response
-- [ ] Store tokens in flow state
+### 5.5 Token Exchange ✓
+- [x] POST to token endpoint (code, code_verifier, client credentials)
+- [x] Parse and display token response
+- [x] Store tokens in flow state
 
 ### 5.6 Token Refresh
 - [ ] POST to token endpoint with refresh_token grant

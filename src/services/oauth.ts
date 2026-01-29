@@ -6,6 +6,7 @@ import type {
   ClientCredentials,
   RegistrationRequest,
   PKCEState,
+  TokenResponse,
 } from '../types'
 
 // Build a well-known URL for OAuth metadata discovery
@@ -292,4 +293,55 @@ export function buildAuthorizationUrl(params: AuthorizationParams): string {
   url.searchParams.set('code_challenge_method', params.pkce.code_challenge_method)
 
   return url.toString()
+}
+
+// Token exchange parameters
+export interface TokenExchangeParams {
+  tokenEndpoint: string
+  code: string
+  redirectUri: string
+  clientId: string
+  clientSecret?: string
+  codeVerifier: string
+}
+
+// Exchange authorization code for tokens
+export async function exchangeToken(
+  params: TokenExchangeParams
+): Promise<{ tokens: TokenResponse; exchange: HttpExchange }> {
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code: params.code,
+    redirect_uri: params.redirectUri,
+    client_id: params.clientId,
+    code_verifier: params.codeVerifier,
+  })
+
+  // Build headers - use Basic auth if client_secret is provided
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Accept: 'application/json',
+  }
+
+  if (params.clientSecret) {
+    const credentials = btoa(`${params.clientId}:${params.clientSecret}`)
+    headers['Authorization'] = `Basic ${credentials}`
+  }
+
+  const request: HttpRequest = {
+    method: 'POST',
+    url: params.tokenEndpoint,
+    headers,
+    body: body.toString(),
+  }
+
+  const { data, exchange } = await fetchWithCapture(request)
+
+  const tokens = data as TokenResponse
+
+  if (!tokens.access_token) {
+    throw new FetchError('Token response missing access_token', exchange)
+  }
+
+  return { tokens, exchange }
 }
