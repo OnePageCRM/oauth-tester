@@ -14,6 +14,7 @@
     "qa": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
@@ -25,12 +26,14 @@
     "@types/express": "^5.0.6",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
+    "@types/supertest": "^6.0.3",
     "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",
     "happy-dom": "^20.4.0",
     "prettier": "^3.8.1",
+    "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",

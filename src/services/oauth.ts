@@ -8,6 +8,7 @@ import type {
   PKCEState,
   TokenResponse,
 } from '../types'
+import { proxyFetch, ProxyFetchError } from './proxy'
 
 // Build a well-known URL for OAuth metadata discovery
 export function buildDiscoveryUrl(serverUrl: string): string {
@@ -287,12 +288,13 @@ export async function registerClient(
     body: JSON.stringify(requestBody),
   }
 
-  const { data, exchange } = await fetchWithCapture(request)
+  // Use proxy for registration - CORS not allowed on registration endpoints
+  const { data, exchange } = await proxyFetch(request)
 
   const responseData = data as Record<string, unknown>
 
   if (!responseData.client_id) {
-    throw new FetchError('Registration response missing client_id', exchange)
+    throw new ProxyFetchError('Registration response missing client_id', exchange)
   }
 
   const credentials: ClientCredentials = {
@@ -374,12 +376,13 @@ export async function exchangeToken(
     body: body.toString(),
   }
 
-  const { data, exchange } = await fetchWithCapture(request)
+  // Use proxy for token exchange - CORS may not be allowed depending on client type
+  const { data, exchange } = await proxyFetch(request)
 
   const tokens = data as TokenResponse
 
   if (!tokens.access_token) {
-    throw new FetchError('Token response missing access_token', exchange)
+    throw new ProxyFetchError('Token response missing access_token', exchange)
   }
 
   return { tokens, exchange }

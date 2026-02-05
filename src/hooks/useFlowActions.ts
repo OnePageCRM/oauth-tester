@@ -9,6 +9,7 @@ import {
   getCallbackUrl,
   FetchError,
 } from '../services/oauth'
+import { ProxyFetchError } from '../services/proxy'
 import { generatePKCE, generateState } from '../services/pkce'
 import { saveRedirectState } from '../services/storage'
 import type {
@@ -190,7 +191,8 @@ export function useFlowActions() {
       }
       addStep(registrationStep)
     } catch (error) {
-      const exchange = error instanceof FetchError ? error.exchange : undefined
+      const exchange =
+        error instanceof FetchError || error instanceof ProxyFetchError ? error.exchange : undefined
       updateStep(discoveryStep.id, {
         status: 'error',
         error: error instanceof Error ? error.message : 'Discovery failed',
@@ -265,7 +267,10 @@ export function useFlowActions() {
         }
         addStep(authorizationStep)
       } catch (error) {
-        const exchange = error instanceof FetchError ? error.exchange : undefined
+        const exchange =
+          error instanceof FetchError || error instanceof ProxyFetchError
+            ? error.exchange
+            : undefined
         updateStep(registrationStep.id, {
           status: 'error',
           error: error instanceof Error ? error.message : 'Registration failed',
@@ -480,7 +485,8 @@ export function useFlowActions() {
         addStep(refreshStep)
       }
     } catch (error) {
-      const exchange = error instanceof FetchError ? error.exchange : undefined
+      const exchange =
+        error instanceof FetchError || error instanceof ProxyFetchError ? error.exchange : undefined
       updateStep(tokenStep.id, {
         status: 'error',
         error: error instanceof Error ? error.message : 'Token exchange failed',

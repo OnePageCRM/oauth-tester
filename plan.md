@@ -58,7 +58,7 @@
 - [x] Parse and display token response
 - [x] Store tokens in flow state
 
-## Phase 6: Backend Proxy (CRITICAL - CORS workaround)
+## Phase 6: Backend Proxy ✓ (CRITICAL - CORS workaround)
 
 CORS restrictions prevent browser-only operation for certain endpoints.
 See `goals.md` "CORS" section for details.
@@ -69,16 +69,18 @@ See `goals.md` "CORS" section for details.
 - [x] Prod mode: Express serves `dist/` static files
 - [x] Scripts: `dev` (unified), `build` (frontend), `start` (production)
 
-### 6.2 Proxy Endpoint
-- [ ] `POST /api/proxy` - Generic request forwarder
+### 6.2 Proxy Endpoint ✓
+- [x] `POST /api/proxy` - Generic request forwarder
   - Accepts: `{ url, method, headers, body }`
   - Returns: `{ status, headers, body }`
   - Stateless - no secrets stored server-side
+  - Validates: URL format, HTTPS required (except localhost)
 
-### 6.3 Frontend Integration
-- [ ] Create `proxyFetch()` utility in `services/proxy.ts`
-- [ ] Update registration service to use proxy
-- [ ] Update token service to use proxy (for confidential clients)
+### 6.3 Frontend Integration ✓
+- [x] Create `proxyFetch()` utility in `services/proxy.ts`
+- [x] Update registration service to use proxy
+- [x] Update token service to use proxy (for confidential clients)
+- [x] Update error handling to support `ProxyFetchError`
 
 ## Phase 7: Remaining OAuth Operations (requires proxy)
 
@@ -148,8 +150,8 @@ oauth-tester/
 3. Phase 5.1 - 5.2 (discovery + registration) ✓
 4. Phase 4 (refine step components as we go) ✓
 5. Phase 5.3 - 5.5 (core OAuth flow) ✓
-6. **Phase 6 (backend proxy)** ← CURRENT
-7. Phase 7 (remaining OAuth operations - refresh, introspect, revoke)
+6. Phase 6 (backend proxy) ✓
+7. **Phase 7 (remaining OAuth operations - refresh, introspect, revoke)** ← CURRENT
 8. Phase 8 (polish)
 
 ---

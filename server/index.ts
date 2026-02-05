@@ -1,21 +1,72 @@
+import 'dotenv/config'
 import express, { Request, Response } from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isProduction = process.env.NODE_ENV === 'production'
-const PORT = process.env.PORT || 3000
+const PORT = Number(process.env.PORT) || 3000
+const HOST = process.env.HOST || 'localhost'
+
+// Proxy request handler - exported for testing
+export async function handleProxyRequest(req: Request, res: Response): Promise<void> {
+  const { url, method, headers, body } = req.body as {
+    url?: string
+    method?: string
+    headers?: Record<string, string>
+    body?: string
+  }
+
+  // Validate required fields
+  if (!url || typeof url !== 'string') {
+    res.status(400).json({ error: 'Missing or invalid "url" field' })
+    return
+  }
+
+  // Validate URL format
+  try {
+    new URL(url)
+  } catch {
+    res.status(400).json({ error: 'Invalid URL format' })
+    return
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: method || 'GET',
+      headers: headers || {},
+      body: body || undefined,
+    })
+
+    // Convert headers to plain object
+    const responseHeaders: Record<string, string> = {}
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value
+    })
+
+    const responseBody = await response.text()
+
+    res.json({
+      status: response.status,
+      headers: responseHeaders,
+      body: responseBody,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    res.status(502).json({ error: `Proxy request failed: ${message}` })
+  }
+}
+
+// Create Express app - exported for testing
+export function createApp(): express.Application {
+  const app = express()
+  app.use(express.json())
+  app.post('/api/proxy', handleProxyRequest)
+  return app
+}
 
 async function createServer() {
-  const app = express()
-
-  app.use(express.json())
-
-  // API routes (before Vite middleware)
-  app.post('/api/proxy', async (req: Request, res: Response) => {
-    // TODO: Implement in Phase 6.2
-    res.status(501).json({ error: 'Not implemented yet' })
-  })
+  const app = createApp()
 
   if (isProduction) {
     // Production: serve static files from dist/
@@ -38,8 +89,8 @@ async function createServer() {
     // SPA fallback for dev - Vite middleware handles index.html automatically
   }
 
-  app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`)
+  app.listen(PORT, HOST, () => {
+    console.log(`Server running at http://${HOST}:${PORT}`)
     if (!isProduction) {
       console.log('Development mode - Vite HMR enabled')
     }
