@@ -63,11 +63,11 @@
 CORS restrictions prevent browser-only operation for certain endpoints.
 See `goals.md` "CORS" section for details.
 
-### 6.1 Backend Setup
-- [ ] Create Express server (`server/index.ts`)
-- [ ] Dev mode: Express uses Vite as middleware (single process, HMR works)
-- [ ] Prod mode: Express serves `dist/` static files
-- [ ] Scripts: `dev` (unified), `build` (frontend), `start` (production)
+### 6.1 Backend Setup ✓
+- [x] Create Express server (`server/index.ts`)
+- [x] Dev mode: Express uses Vite as middleware (single process, HMR works)
+- [x] Prod mode: Express serves `dist/` static files
+- [x] Scripts: `dev` (unified), `build` (frontend), `start` (production)
 
 ### 6.2 Proxy Endpoint
 - [ ] `POST /api/proxy` - Generic request forwarder
