@@ -64,10 +64,10 @@ CORS restrictions prevent browser-only operation for certain endpoints.
 See `goals.md` "CORS" section for details.
 
 ### 6.1 Backend Setup
-- [ ] Create Express/Node.js server (`server/` directory)
-- [ ] Configure for development (proxy alongside Vite dev server)
-- [ ] Configure for production (serve static files + API)
-- [ ] Add npm scripts: `dev:server`, `start` (production)
+- [ ] Create Express server (`server/index.ts`)
+- [ ] Dev mode: Express uses Vite as middleware (single process, HMR works)
+- [ ] Prod mode: Express serves `dist/` static files
+- [ ] Scripts: `dev` (unified), `build` (frontend), `start` (production)
 
 ### 6.2 Proxy Endpoint
 - [ ] `POST /api/proxy` - Generic request forwarder
@@ -105,6 +105,8 @@ See `goals.md` "CORS" section for details.
 oauth-tester/
 ├── public/
 │   └── callback.html
+├── server/
+│   └── index.ts          # Express server (dev: Vite middleware, prod: static)
 ├── src/
 │   ├── components/
 │   │   ├── Layout.tsx
@@ -124,7 +126,8 @@ oauth-tester/
 │   ├── services/
 │   │   ├── storage.ts
 │   │   ├── oauth.ts
-│   │   └── pkce.ts
+│   │   ├── pkce.ts
+│   │   └── proxy.ts      # proxyFetch() utility
 │   ├── types/
 │   │   └── index.ts
 │   ├── App.tsx
@@ -132,6 +135,7 @@ oauth-tester/
 ├── index.html
 ├── package.json
 ├── tsconfig.json
+├── tsconfig.server.json  # TypeScript config for server
 ├── vite.config.ts
 ├── eslint.config.js
 ├── .prettierrc

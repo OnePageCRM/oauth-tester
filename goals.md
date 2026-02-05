@@ -80,13 +80,12 @@ A lightweight backend is needed to proxy requests that browsers cannot make dire
 - Authorization redirect (browser navigation, not fetch)
 - Token exchange for public clients (when redirect_uri matches tester domain)
 
-### Production Build
-- **Frontend**: Static files (HTML, JS, CSS) - can deploy anywhere
-- **Backend**: Lightweight proxy server (Node.js/Express)
-- Options:
-  - Single deployment (backend serves static frontend)
-  - Separate deployments (static hosting + API server)
-- `callback.html` must be included in build output
+### Build & Deployment
+- **Unified approach**: Express server handles everything
+- **Dev** (`npm run dev`): Express + Vite middleware, single port, HMR works
+- **Build** (`npm run build`): Compile frontend to `dist/`
+- **Prod** (`npm run start`): Express serves `dist/` static files + `/api/*` proxy
+- `callback.html` included in build output
 
 ### Redirect URL Solution
 **Problem**: OAuth redirect_uri cannot contain `#` fragment
