@@ -31,6 +31,7 @@ export function FlowView() {
     handleResetToken,
     handleRefresh,
     handleResetRefresh,
+    handleAddRefreshStep,
   } = useFlowActions()
 
   if (!activeFlow) {
@@ -142,6 +143,7 @@ export function FlowView() {
             onFork={onFork}
             onRefresh={handleRefresh}
             onReset={handleResetRefresh}
+            onRepeat={handleAddRefreshStep}
             refreshToken={activeFlow.tokens?.refresh_token}
             clientId={activeFlow.credentials?.client_id}
             clientSecret={activeFlow.credentials?.client_secret}

@@ -8,6 +8,7 @@ interface StepBaseProps {
   title: string
   onFork: () => void
   onReset?: () => void
+  onRepeat?: () => void // Add another instance of this step type
   errorDetails?: string // Additional error details to show after step.error
   children: ReactNode
 }
@@ -18,6 +19,7 @@ export function StepBase({
   title,
   onFork,
   onReset,
+  onRepeat,
   errorDetails,
   children,
 }: StepBaseProps) {
@@ -34,6 +36,11 @@ export function StepBase({
         <span className="step-title">{title}</span>
         <span className={`step-status status-${step.status}`}>{formatStatus(step.status)}</span>
         <div className="step-actions">
+          {step.status === 'complete' && onRepeat && (
+            <button className="step-repeat" onClick={onRepeat} title="Run this step again">
+              Repeat
+            </button>
+          )}
           {canReset && onReset && (
             <button className="step-reset" onClick={onReset} title="Reset and edit">
               Edit

@@ -4,6 +4,7 @@ import { StepBase } from './StepBase'
 import './StepForms.css'
 
 export interface RefreshFormData {
+  stepId: string
   grantType: string
   refreshToken: string
   scope: string
@@ -20,6 +21,7 @@ interface RefreshStepProps {
   onFork: () => void
   onRefresh: (data: RefreshFormData) => void
   onReset: () => void
+  onRepeat: () => void
   // Pre-fill values from flow state
   refreshToken?: string
   clientId?: string
@@ -32,12 +34,15 @@ export function RefreshStep({
   index,
   onFork,
   onRefresh,
-  onReset,
+  onReset: _onReset,
+  onRepeat,
   refreshToken: defaultRefreshToken,
   clientId: defaultClientId,
   clientSecret: defaultClientSecret,
   tokenEndpointAuthMethod: defaultAuthMethod,
 }: RefreshStepProps) {
+  // Note: _onReset is currently unused because onRefresh handles updating
+  // the specific step by ID. Kept for potential future use.
   const [isEditing, setIsEditing] = useState(false)
   const hasInitialized = useRef(false)
 
@@ -198,10 +203,11 @@ export function RefreshStep({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (isEditing) {
-      onReset()
-    }
+    // Note: We don't call onReset() here because onRefresh() will update the
+    // correct step by ID. Calling onReset would find the wrong step when there
+    // are multiple refresh steps.
     onRefresh({
+      stepId: step.id,
       grantType,
       refreshToken,
       scope,
@@ -224,6 +230,7 @@ export function RefreshStep({
       title="Token Refresh"
       onFork={onFork}
       onReset={isComplete && !isEditing ? handleEdit : undefined}
+      onRepeat={onRepeat}
     >
       {isComplete && step.tokens && !isEditing ? (
         <div className="metadata-grid">

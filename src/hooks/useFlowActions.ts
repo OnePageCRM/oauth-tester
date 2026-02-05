@@ -566,7 +566,8 @@ export function useFlowActions() {
     async (formData: RefreshFormData) => {
       if (!activeFlow?.metadata?.token_endpoint) return
 
-      const refreshStepData = activeFlow.steps.find((s) => s.type === 'refresh')
+      // Find the specific refresh step by ID (not just any refresh step)
+      const refreshStepData = activeFlow.steps.find((s) => s.id === formData.stepId)
       if (!refreshStepData) return
 
       const tokenEndpoint = activeFlow.metadata.token_endpoint
@@ -612,20 +613,6 @@ export function useFlowActions() {
             ...tokens,
           },
         })
-
-        // If we got a new refresh token, we can refresh again
-        // Add another refresh step if there isn't one pending
-        const hasAnotherRefreshStep = activeFlow.steps.some(
-          (s) => s.type === 'refresh' && s.id !== refreshStepData.id && s.status === 'pending'
-        )
-        if (tokens.refresh_token && !hasAnotherRefreshStep) {
-          const newRefreshStep: RefreshStep = {
-            id: generateId(),
-            type: 'refresh',
-            status: 'pending',
-          }
-          addStep(newRefreshStep)
-        }
       } catch (error) {
         const exchange =
           error instanceof FetchError || error instanceof ProxyFetchError
@@ -648,8 +635,20 @@ export function useFlowActions() {
         } as Partial<Step>)
       }
     },
-    [activeFlow, updateStep, updateFlow, addStep]
+    [activeFlow, updateStep, updateFlow]
   )
+
+  // Add a new refresh step (for repeating)
+  const handleAddRefreshStep = useCallback(() => {
+    if (!activeFlow) return
+
+    const newRefreshStep: RefreshStep = {
+      id: generateId(),
+      type: 'refresh',
+      status: 'pending',
+    }
+    addStep(newRefreshStep)
+  }, [activeFlow, addStep])
 
   return {
     handleStartSubmit,
@@ -665,5 +664,6 @@ export function useFlowActions() {
     handleResetToken,
     handleRefresh,
     handleResetRefresh,
+    handleAddRefreshStep,
   }
 }
