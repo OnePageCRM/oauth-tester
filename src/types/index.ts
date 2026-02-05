@@ -141,9 +141,16 @@ export interface RegistrationStep extends BaseStep {
 
 export interface AuthorizationStep extends BaseStep {
   type: 'authorization'
-  pkce?: PKCEState
-  state?: string
+  // Form values (editable)
+  responseType?: string
+  clientId?: string
+  redirectUri?: string
   scope?: string
+  state?: string
+  codeChallenge?: string
+  codeChallengeMethod?: string
+  codeVerifier?: string // Stored for token exchange
+  // Result
   authorizationUrl?: string
 }
 
@@ -200,7 +207,6 @@ export interface Flow {
   serverUrl?: string
   metadata?: ServerMetadata
   credentials?: ClientCredentials
-  pkce?: PKCEState
   tokens?: TokenResponse
 }
 

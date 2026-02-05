@@ -132,7 +132,6 @@ export function forkFlow(
     serverUrl: sourceFlow.serverUrl,
     metadata: sourceFlow.metadata ? { ...sourceFlow.metadata } : undefined,
     credentials: sourceFlow.credentials ? { ...sourceFlow.credentials } : undefined,
-    pkce: sourceFlow.pkce ? { ...sourceFlow.pkce } : undefined,
     tokens: sourceFlow.tokens ? { ...sourceFlow.tokens } : undefined,
   }
 
@@ -149,7 +148,7 @@ export function forkFlow(
 export function updateFlowState(
   state: AppState,
   flowId: string,
-  flowUpdates: Partial<Pick<Flow, 'serverUrl' | 'metadata' | 'credentials' | 'pkce' | 'tokens'>>
+  flowUpdates: Partial<Pick<Flow, 'serverUrl' | 'metadata' | 'credentials' | 'tokens'>>
 ): AppState {
   return updateFlow(state, flowId, flowUpdates)
 }

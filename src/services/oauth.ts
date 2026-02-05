@@ -5,7 +5,6 @@ import type {
   HttpResponse,
   ClientCredentials,
   RegistrationRequest,
-  PKCEState,
   TokenResponse,
 } from '../types'
 import { proxyFetch, ProxyFetchError } from './proxy'
@@ -309,17 +308,19 @@ export async function registerClient(
 // Build authorization URL for OAuth 2.1
 export interface AuthorizationParams {
   authorizationEndpoint: string
+  responseType: string
   clientId: string
   redirectUri: string
   scope: string // Empty string = omit, single space = send empty
   state: string
-  pkce: PKCEState
+  codeChallenge: string
+  codeChallengeMethod: string
 }
 
 export function buildAuthorizationUrl(params: AuthorizationParams): string {
   const url = new URL(params.authorizationEndpoint)
 
-  url.searchParams.set('response_type', 'code')
+  url.searchParams.set('response_type', params.responseType)
   url.searchParams.set('client_id', params.clientId)
   url.searchParams.set('redirect_uri', params.redirectUri)
 
@@ -330,8 +331,8 @@ export function buildAuthorizationUrl(params: AuthorizationParams): string {
   }
 
   url.searchParams.set('state', params.state)
-  url.searchParams.set('code_challenge', params.pkce.code_challenge)
-  url.searchParams.set('code_challenge_method', params.pkce.code_challenge_method)
+  url.searchParams.set('code_challenge', params.codeChallenge)
+  url.searchParams.set('code_challenge_method', params.codeChallengeMethod)
 
   return url.toString()
 }

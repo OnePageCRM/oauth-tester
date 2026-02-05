@@ -108,6 +108,7 @@ export function FlowView() {
             onFork={onFork}
             onAuthorize={handleAuthorize}
             onReset={handleResetAuthorization}
+            clientId={activeFlow.credentials?.client_id}
             supportedScopes={activeFlow.metadata?.scopes_supported}
           />
         )

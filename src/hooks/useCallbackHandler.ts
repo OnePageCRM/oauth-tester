@@ -94,16 +94,15 @@ export function useCallbackHandler() {
         } as Partial<Step>,
       })
 
-      // Store code_verifier in flow for token exchange
-      if (flow.pkce) {
+      // Update authorization step with codeVerifier from redirect state (if needed)
+      const authStep = flow.steps.find((s) => s.type === 'authorization')
+      if (authStep && !authStep.codeVerifier) {
         dispatch({
-          type: 'UPDATE_FLOW',
+          type: 'UPDATE_STEP',
           flowId: flow.id,
+          stepId: authStep.id,
           updates: {
-            pkce: {
-              ...flow.pkce,
-              code_verifier: redirectState.codeVerifier,
-            },
+            codeVerifier: redirectState.codeVerifier,
           },
         })
       }

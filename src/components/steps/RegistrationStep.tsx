@@ -224,7 +224,8 @@ export function RegistrationStep({
             } else if (key === 'client_id_issued_at') {
               displayValue = new Date(Number(value) * 1000).toLocaleString()
             } else if (key === 'client_secret_expires_at') {
-              displayValue = Number(value) === 0 ? 'Never' : new Date(Number(value) * 1000).toLocaleString()
+              displayValue =
+                Number(value) === 0 ? 'Never' : new Date(Number(value) * 1000).toLocaleString()
             } else {
               displayValue = String(value)
             }

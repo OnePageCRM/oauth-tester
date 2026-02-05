@@ -6,11 +6,9 @@ import {
   registerClient,
   buildAuthorizationUrl,
   exchangeToken,
-  getCallbackUrl,
   FetchError,
 } from '../services/oauth'
 import { ProxyFetchError } from '../services/proxy'
-import { generatePKCE, generateState } from '../services/pkce'
 import { saveRedirectState } from '../services/storage'
 import type {
   Flow,
@@ -23,6 +21,7 @@ import type {
   ClientCredentials,
   RegistrationRequest,
 } from '../types'
+import type { AuthorizationFormData } from '../components/steps/AuthorizationStep'
 
 export function useFlowActions() {
   const { activeFlow, dispatch } = useApp()
@@ -94,7 +93,6 @@ export function useFlowActions() {
       serverUrl: undefined,
       metadata: undefined,
       credentials: undefined,
-      pkce: undefined,
       tokens: undefined,
     })
   }, [activeFlow, updateStep, updateFlow, truncateSteps])
@@ -123,7 +121,6 @@ export function useFlowActions() {
     updateFlow({
       metadata: undefined,
       credentials: undefined,
-      pkce: undefined,
       tokens: undefined,
     })
   }, [activeFlow, updateStep, updateFlow, truncateSteps])
@@ -224,7 +221,6 @@ export function useFlowActions() {
     // Clear flow state that depends on registration
     updateFlow({
       credentials: undefined,
-      pkce: undefined,
       tokens: undefined,
     })
   }, [activeFlow, updateStep, updateFlow, truncateSteps])
@@ -324,9 +320,14 @@ export function useFlowActions() {
     // Reset to pending
     updateStep(authStep.id, {
       status: 'pending',
-      pkce: undefined,
-      state: undefined,
+      responseType: undefined,
+      clientId: undefined,
+      redirectUri: undefined,
       scope: undefined,
+      state: undefined,
+      codeChallenge: undefined,
+      codeChallengeMethod: undefined,
+      codeVerifier: undefined,
       authorizationUrl: undefined,
       completedAt: undefined,
       error: undefined,
@@ -337,15 +338,14 @@ export function useFlowActions() {
 
     // Clear flow state that depends on authorization
     updateFlow({
-      pkce: undefined,
       tokens: undefined,
     })
   }, [activeFlow, updateStep, updateFlow, truncateSteps])
 
-  // Handle Authorization - generate PKCE, build URL, redirect
+  // Handle Authorization - build URL with user-provided values, redirect
   const handleAuthorize = useCallback(
-    async (scope: string) => {
-      if (!activeFlow?.metadata?.authorization_endpoint || !activeFlow?.credentials) return
+    async (formData: AuthorizationFormData) => {
+      if (!activeFlow?.metadata?.authorization_endpoint) return
 
       const authStep = activeFlow.steps.find((s) => s.type === 'authorization')
       if (!authStep) return
@@ -354,41 +354,40 @@ export function useFlowActions() {
       updateStep(authStep.id, { status: 'in_progress' })
 
       try {
-        // Generate PKCE
-        const pkce = await generatePKCE()
-        const state = generateState()
-        const redirectUri = getCallbackUrl()
-
-        // Build authorization URL
+        // Build authorization URL with user-provided values
         const authorizationUrl = buildAuthorizationUrl({
           authorizationEndpoint: activeFlow.metadata.authorization_endpoint,
-          clientId: activeFlow.credentials.client_id,
-          redirectUri,
-          scope,
-          state,
-          pkce,
+          responseType: formData.responseType,
+          clientId: formData.clientId,
+          redirectUri: formData.redirectUri,
+          scope: formData.scope,
+          state: formData.state,
+          codeChallenge: formData.codeChallenge,
+          codeChallengeMethod: formData.codeChallengeMethod,
         })
 
         // Save redirect state before navigating
         saveRedirectState({
           flowId: activeFlow.id,
-          codeVerifier: pkce.code_verifier,
-          state,
+          codeVerifier: formData.codeVerifier,
+          state: formData.state,
         })
 
         // Update step with authorization details
         updateStep(authStep.id, {
           status: 'complete',
-          pkce,
-          state,
-          scope,
+          responseType: formData.responseType,
+          clientId: formData.clientId,
+          redirectUri: formData.redirectUri,
+          scope: formData.scope,
+          state: formData.state,
+          codeChallenge: formData.codeChallenge,
+          codeChallengeMethod: formData.codeChallengeMethod,
+          codeVerifier: formData.codeVerifier,
           authorizationUrl,
           completedAt: Date.now(),
           error: undefined,
         } as Partial<Step>)
-
-        // Update flow state
-        updateFlow({ pkce })
 
         // Add callback step (will be processed when user returns)
         const callbackStep: CallbackStep = {
@@ -407,7 +406,7 @@ export function useFlowActions() {
         } as Partial<Step>)
       }
     },
-    [activeFlow, updateStep, updateFlow, addStep]
+    [activeFlow, updateStep, addStep]
   )
 
   // Reset Token step
@@ -438,8 +437,13 @@ export function useFlowActions() {
 
   // Handle Token Exchange
   const handleTokenExchange = useCallback(async () => {
-    if (!activeFlow?.metadata?.token_endpoint || !activeFlow?.credentials || !activeFlow?.pkce)
-      return
+    if (!activeFlow?.metadata?.token_endpoint) return
+
+    // Find the authorization step to get codeVerifier and redirectUri
+    const authStep = activeFlow.steps.find((s) => s.type === 'authorization') as
+      | AuthorizationStep
+      | undefined
+    if (!authStep?.codeVerifier) return
 
     // Find the callback step to get the code
     const callbackStep = activeFlow.steps.find((s) => s.type === 'callback')
@@ -457,10 +461,10 @@ export function useFlowActions() {
       const { tokens, exchange } = await exchangeToken({
         tokenEndpoint: activeFlow.metadata.token_endpoint,
         code,
-        redirectUri: getCallbackUrl(),
-        clientId: activeFlow.credentials.client_id,
-        clientSecret: activeFlow.credentials.client_secret,
-        codeVerifier: activeFlow.pkce.code_verifier,
+        redirectUri: authStep.redirectUri ?? '',
+        clientId: authStep.clientId ?? activeFlow.credentials?.client_id ?? '',
+        clientSecret: activeFlow.credentials?.client_secret,
+        codeVerifier: authStep.codeVerifier,
       })
 
       // Mark as complete
