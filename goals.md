@@ -150,6 +150,7 @@ No special preset system - just flows and forking.
 - Actual OAuth server implementation
 - Support for OAuth 1.0
 - Mobile app testing
+- Backend storage for flows (persistent across browsers/devices)
 
 ## Acceptance Criteria
 
