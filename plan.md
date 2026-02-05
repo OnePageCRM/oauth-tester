@@ -58,19 +58,43 @@
 - [x] Parse and display token response
 - [x] Store tokens in flow state
 
-### 5.6 Token Refresh
+## Phase 6: Backend Proxy (CRITICAL - CORS workaround)
+
+CORS restrictions prevent browser-only operation for certain endpoints.
+See `goals.md` "CORS" section for details.
+
+### 6.1 Backend Setup
+- [ ] Create Express/Node.js server (`server/` directory)
+- [ ] Configure for development (proxy alongside Vite dev server)
+- [ ] Configure for production (serve static files + API)
+- [ ] Add npm scripts: `dev:server`, `start` (production)
+
+### 6.2 Proxy Endpoint
+- [ ] `POST /api/proxy` - Generic request forwarder
+  - Accepts: `{ url, method, headers, body }`
+  - Returns: `{ status, headers, body }`
+  - Stateless - no secrets stored server-side
+
+### 6.3 Frontend Integration
+- [ ] Create `proxyFetch()` utility in `services/proxy.ts`
+- [ ] Update registration service to use proxy
+- [ ] Update token service to use proxy (for confidential clients)
+
+## Phase 7: Remaining OAuth Operations (requires proxy)
+
+### 7.1 Token Refresh
 - [ ] POST to token endpoint with refresh_token grant
 - [ ] Update stored tokens
 
-### 5.7 Introspection
+### 7.2 Introspection
 - [ ] POST to introspection endpoint
 - [ ] Display token info (active, scope, exp, etc.)
 
-### 5.8 Revocation
+### 7.3 Revocation
 - [ ] POST to revocation endpoint
 - [ ] Confirm revocation
 
-## Phase 6: Polish
+## Phase 8: Polish
 - [ ] Error handling and display
 - [ ] Loading states
 - [ ] Responsive layout adjustments
@@ -115,13 +139,14 @@ oauth-tester/
 ```
 
 ## Implementation Order
-1. Phase 1 + 2 (foundation)
-2. Phase 3 (see something working)
-3. Phase 5.1 - 5.2 (discovery + registration)
-4. Phase 4 (refine step components as we go)
-5. Phase 5.3 - 5.5 (core OAuth flow)
-6. Phase 5.6 - 5.8 (optional operations)
-7. Phase 6 (polish)
+1. Phase 1 + 2 (foundation) ✓
+2. Phase 3 (see something working) ✓
+3. Phase 5.1 - 5.2 (discovery + registration) ✓
+4. Phase 4 (refine step components as we go) ✓
+5. Phase 5.3 - 5.5 (core OAuth flow) ✓
+6. **Phase 6 (backend proxy)** ← CURRENT
+7. Phase 7 (remaining OAuth operations - refresh, introspect, revoke)
+8. Phase 8 (polish)
 
 ---
 *Edit this file and let's refine before coding*

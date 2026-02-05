@@ -49,13 +49,43 @@ Browser-based tool for testing OAuth 2.1 implementation flows from the client pe
 - HTML + CSS + Typescript + React
 - npm + node.js for development (Vite or similar)
 - Local storage for persistence
-- No backend required
+- **Backend proxy required** for CORS-restricted operations
+
+### CORS
+OAuth servers have different CORS policies per endpoint:
+
+| Endpoint | CORS Policy | Browser Direct Access |
+|----------|-------------|-----------------------|
+| Discovery (`.well-known/`) | `Access-Control-Allow-Origin: *` | Yes |
+| Registration | None (server-to-server only) | **No** - needs backend proxy |
+| Token | Client-specific (derived from redirect URIs) | Public clients only* |
+| Introspection | Typically none | **No** - needs backend proxy |
+| Revocation | Varies | Likely needs proxy |
+
+*Token endpoint CORS is granted only to domains matching registered `redirect_uris`, so only works for public clients where the tester's domain is the redirect target.
+
+### Backend Proxy Requirements
+A lightweight backend is needed to proxy requests that browsers cannot make directly:
+
+**Must proxy:**
+- Client registration (RFC 7591) - always server-to-server
+- Token exchange for confidential clients
+
+**May need proxy:**
+- Token introspection
+- Token revocation
+
+**Never needs proxy:**
+- Discovery metadata fetch
+- Authorization redirect (browser navigation, not fetch)
+- Token exchange for public clients (when redirect_uri matches tester domain)
 
 ### Production Build
-- Output: static files only (HTML, JS, CSS)
-- Deploy to any static hosting (nginx, Apache, S3, GitHub Pages, Netlify, etc.)
-- Single `dist/` folder with all assets
-- Works with any base URL path (configurable)
+- **Frontend**: Static files (HTML, JS, CSS) - can deploy anywhere
+- **Backend**: Lightweight proxy server (Node.js/Express)
+- Options:
+  - Single deployment (backend serves static frontend)
+  - Separate deployments (static hosting + API server)
 - `callback.html` must be included in build output
 
 ### Redirect URL Solution
@@ -106,6 +136,10 @@ No special preset system - just flows and forking.
 - [ ] Should we support PAR (Pushed Authorization Requests)?
 - [ ] Export/import flow configurations?
 
+## Resolved Questions
+
+- [x] **Backend required?** Yes - CORS restrictions on registration/token endpoints for confidential clients require a backend proxy. Discovery works directly from browser.
+
 ## Confirmed Features
 
 - **Request/Response details**: Each step shows expandable "Show details" section with:
@@ -114,7 +148,6 @@ No special preset system - just flows and forking.
   - Useful for debugging and understanding the OAuth flow
 
 ## Non-Goals (for initial version)
-- Backend/server component
 - Actual OAuth server implementation
 - Support for OAuth 1.0
 - Mobile app testing
