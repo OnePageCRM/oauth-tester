@@ -8,6 +8,7 @@ import {
   discoverMetadata,
   registerClient,
   exchangeToken,
+  refreshToken,
   FetchError,
 } from './oauth'
 import * as proxy from './proxy'
@@ -754,6 +755,197 @@ describe('oauth', () => {
       expect(body.get('redirect_uri')).toBe('http://localhost:3000/callback')
       expect(body.get('client_id')).toBe('my-client-id')
       expect(body.get('code_verifier')).toBe('my-code-verifier')
+    })
+  })
+
+  describe('refreshToken', () => {
+    beforeEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('should refresh tokens successfully', async () => {
+      const mockTokens = {
+        access_token: 'new-access-token',
+        token_type: 'Bearer',
+        expires_in: 3600,
+        refresh_token: 'new-refresh-token',
+      }
+
+      vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockTokens),
+        },
+        data: mockTokens,
+        exchange: {
+          request: {
+            method: 'POST',
+            url: 'https://auth.example.com/token',
+            headers: {},
+          },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockTokens),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      const result = await refreshToken({
+        tokenEndpoint: 'https://auth.example.com/token',
+        refreshToken: 'old-refresh-token',
+        clientId: 'test-client',
+      })
+
+      expect(result.tokens.access_token).toBe('new-access-token')
+      expect(result.tokens.refresh_token).toBe('new-refresh-token')
+    })
+
+    it('should include Basic auth header when client_secret provided', async () => {
+      const mockTokens = { access_token: 'token', token_type: 'Bearer' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockTokens),
+        },
+        data: mockTokens,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/token', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockTokens),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await refreshToken({
+        tokenEndpoint: 'https://auth.example.com/token',
+        refreshToken: 'refresh-token',
+        clientId: 'test-client',
+        clientSecret: 'test-secret',
+      })
+
+      const request = proxyFetchSpy.mock.calls[0][0]
+      expect(request.headers['Authorization']).toBe(`Basic ${btoa('test-client:test-secret')}`)
+    })
+
+    it('should send correct form body parameters', async () => {
+      const mockTokens = { access_token: 'token', token_type: 'Bearer' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockTokens),
+        },
+        data: mockTokens,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/token', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockTokens),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await refreshToken({
+        tokenEndpoint: 'https://auth.example.com/token',
+        refreshToken: 'my-refresh-token',
+        clientId: 'my-client-id',
+      })
+
+      const request = proxyFetchSpy.mock.calls[0][0]
+      const body = new URLSearchParams(request.body as string)
+
+      expect(body.get('grant_type')).toBe('refresh_token')
+      expect(body.get('refresh_token')).toBe('my-refresh-token')
+      expect(body.get('client_id')).toBe('my-client-id')
+    })
+
+    it('should include scope when provided', async () => {
+      const mockTokens = { access_token: 'token', token_type: 'Bearer' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockTokens),
+        },
+        data: mockTokens,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/token', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockTokens),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await refreshToken({
+        tokenEndpoint: 'https://auth.example.com/token',
+        refreshToken: 'refresh-token',
+        clientId: 'client-id',
+        scope: 'openid profile',
+      })
+
+      const request = proxyFetchSpy.mock.calls[0][0]
+      const body = new URLSearchParams(request.body as string)
+
+      expect(body.get('scope')).toBe('openid profile')
+    })
+
+    it('should throw error when response missing access_token', async () => {
+      const mockResponse = { token_type: 'Bearer', expires_in: 3600 }
+
+      vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockResponse),
+        },
+        data: mockResponse,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/token', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockResponse),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await expect(
+        refreshToken({
+          tokenEndpoint: 'https://auth.example.com/token',
+          refreshToken: 'refresh-token',
+          clientId: 'client-id',
+        })
+      ).rejects.toThrow('Refresh response missing access_token')
     })
   })
 

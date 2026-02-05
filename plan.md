@@ -84,9 +84,10 @@ See `goals.md` "CORS" section for details.
 
 ## Phase 7: Remaining OAuth Operations (requires proxy)
 
-### 7.1 Token Refresh
-- [ ] POST to token endpoint with refresh_token grant
-- [ ] Update stored tokens
+### 7.1 Token Refresh ✓
+- [x] POST to token endpoint with refresh_token grant
+- [x] Update stored tokens
+- [x] Add new refresh step if new refresh_token received
 
 ### 7.2 Introspection
 - [ ] POST to introspection endpoint

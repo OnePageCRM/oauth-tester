@@ -29,6 +29,8 @@ export function FlowView() {
     handleResetAuthorization,
     handleTokenExchange,
     handleResetToken,
+    handleRefresh,
+    handleResetRefresh,
   } = useFlowActions()
 
   if (!activeFlow) {
@@ -48,16 +50,12 @@ export function FlowView() {
   }
 
   // Placeholder handlers - will be implemented in later phases
-  const handleRefresh = () => {
-    // TODO: Phase 5.6
-  }
-
   const handleIntrospect = () => {
-    // TODO: Phase 5.7
+    // TODO: Phase 7.2
   }
 
   const handleRevoke = () => {
-    // TODO: Phase 5.8
+    // TODO: Phase 7.3
   }
 
   const renderStep = (step: Step, index: number) => {
@@ -133,6 +131,7 @@ export function FlowView() {
             index={index}
             onFork={onFork}
             onRefresh={handleRefresh}
+            onReset={handleResetRefresh}
             hasRefreshToken={!!activeFlow.tokens?.refresh_token}
           />
         )

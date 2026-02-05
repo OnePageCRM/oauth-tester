@@ -388,3 +388,57 @@ export async function exchangeToken(
 
   return { tokens, exchange }
 }
+
+// Token refresh parameters
+export interface TokenRefreshParams {
+  tokenEndpoint: string
+  refreshToken: string
+  clientId: string
+  clientSecret?: string
+  scope?: string // Optional: request different scope
+}
+
+// Refresh access token using refresh_token grant
+export async function refreshToken(
+  params: TokenRefreshParams
+): Promise<{ tokens: TokenResponse; exchange: HttpExchange }> {
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: params.refreshToken,
+    client_id: params.clientId,
+  })
+
+  // Add scope if provided (to request narrower scope)
+  if (params.scope) {
+    body.set('scope', params.scope)
+  }
+
+  // Build headers - use Basic auth if client_secret is provided
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Accept: 'application/json',
+  }
+
+  if (params.clientSecret) {
+    const credentials = btoa(`${params.clientId}:${params.clientSecret}`)
+    headers['Authorization'] = `Basic ${credentials}`
+  }
+
+  const request: HttpRequest = {
+    method: 'POST',
+    url: params.tokenEndpoint,
+    headers,
+    body: body.toString(),
+  }
+
+  // Use proxy for token refresh - CORS may not be allowed
+  const { data, exchange } = await proxyFetch(request)
+
+  const tokens = data as TokenResponse
+
+  if (!tokens.access_token) {
+    throw new ProxyFetchError('Refresh response missing access_token', exchange)
+  }
+
+  return { tokens, exchange }
+}

@@ -6,6 +6,7 @@ import {
   registerClient,
   buildAuthorizationUrl,
   exchangeToken,
+  refreshToken,
   FetchError,
 } from '../services/oauth'
 import { ProxyFetchError } from '../services/proxy'
@@ -499,6 +500,92 @@ export function useFlowActions() {
     }
   }, [activeFlow, updateStep, updateFlow, addStep])
 
+  // Reset Refresh step
+  const handleResetRefresh = useCallback(() => {
+    if (!activeFlow) return
+    const refreshIndex = activeFlow.steps.findIndex((s) => s.type === 'refresh')
+    if (refreshIndex === -1) return
+
+    const refreshStep = activeFlow.steps[refreshIndex]
+
+    // Reset to pending
+    updateStep(refreshStep.id, {
+      status: 'pending',
+      tokens: undefined,
+      httpExchange: undefined,
+      completedAt: undefined,
+      error: undefined,
+    } as Partial<Step>)
+
+    // Remove all steps after refresh
+    truncateSteps(refreshIndex)
+  }, [activeFlow, updateStep, truncateSteps])
+
+  // Handle Token Refresh
+  const handleRefresh = useCallback(async () => {
+    if (!activeFlow?.metadata?.token_endpoint) return
+    if (!activeFlow.tokens?.refresh_token) return
+
+    const refreshStepData = activeFlow.steps.find((s) => s.type === 'refresh')
+    if (!refreshStepData) return
+
+    // Get client credentials
+    const clientId = activeFlow.credentials?.client_id
+    if (!clientId) return
+
+    // Mark as in progress
+    updateStep(refreshStepData.id, { status: 'in_progress' })
+
+    try {
+      const { tokens, exchange } = await refreshToken({
+        tokenEndpoint: activeFlow.metadata.token_endpoint,
+        refreshToken: activeFlow.tokens.refresh_token,
+        clientId,
+        clientSecret: activeFlow.credentials?.client_secret,
+      })
+
+      // Mark as complete
+      updateStep(refreshStepData.id, {
+        status: 'complete',
+        tokens,
+        httpExchange: exchange,
+        completedAt: Date.now(),
+        error: undefined,
+      } as Partial<Step>)
+
+      // Update flow state with new tokens
+      // Merge with existing tokens (refresh might not return all fields)
+      updateFlow({
+        tokens: {
+          ...activeFlow.tokens,
+          ...tokens,
+        },
+      })
+
+      // If we got a new refresh token, we can refresh again
+      // Add another refresh step if there isn't one pending
+      const hasAnotherRefreshStep = activeFlow.steps.some(
+        (s) => s.type === 'refresh' && s.id !== refreshStepData.id && s.status === 'pending'
+      )
+      if (tokens.refresh_token && !hasAnotherRefreshStep) {
+        const newRefreshStep: RefreshStep = {
+          id: generateId(),
+          type: 'refresh',
+          status: 'pending',
+        }
+        addStep(newRefreshStep)
+      }
+    } catch (error) {
+      const exchange =
+        error instanceof FetchError || error instanceof ProxyFetchError ? error.exchange : undefined
+      updateStep(refreshStepData.id, {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Token refresh failed',
+        httpExchange: exchange,
+      } as Partial<Step>)
+    }
+  }, [activeFlow, updateStep, updateFlow, addStep])
+
   return {
     handleStartSubmit,
     handleDiscover,
@@ -511,5 +598,7 @@ export function useFlowActions() {
     handleResetAuthorization,
     handleTokenExchange,
     handleResetToken,
+    handleRefresh,
+    handleResetRefresh,
   }
 }
