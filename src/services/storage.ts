@@ -48,6 +48,9 @@ export interface CallbackData {
   state: string | null
   error: string | null
   error_description: string | null
+  iss: string | null // RFC 9207 - Authorization Server Issuer Identification
+  extraParams: Record<string, string> | null // Unrecognized parameters
+  callbackUrl: string
   timestamp: number
 }
 

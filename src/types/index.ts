@@ -157,8 +157,12 @@ export interface AuthorizationStep extends BaseStep {
 export interface CallbackStep extends BaseStep {
   type: 'callback'
   code?: string
+  state?: string
+  iss?: string // RFC 9207 - Authorization Server Issuer Identification
   error?: string
   errorDescription?: string
+  extraParams?: Record<string, string> // Unrecognized parameters from authorization server
+  callbackUrl?: string
 }
 
 export interface TokenStep extends BaseStep {

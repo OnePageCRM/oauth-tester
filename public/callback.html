@@ -34,11 +34,31 @@
       ;(function () {
         const params = new URLSearchParams(window.location.search)
 
+        // Known OAuth parameters
+        const knownParams = ['code', 'state', 'error', 'error_description', 'iss']
+
+        // Capture all parameters
+        const allParams = {}
+        for (const [key, value] of params.entries()) {
+          allParams[key] = value
+        }
+
+        // Separate known from unknown parameters
+        const extraParams = {}
+        for (const [key, value] of Object.entries(allParams)) {
+          if (!knownParams.includes(key)) {
+            extraParams[key] = value
+          }
+        }
+
         const callbackData = {
           code: params.get('code'),
           state: params.get('state'),
           error: params.get('error'),
           error_description: params.get('error_description'),
+          iss: params.get('iss'),
+          extraParams: Object.keys(extraParams).length > 0 ? extraParams : null,
+          callbackUrl: window.location.href,
           timestamp: Date.now(),
         }
 

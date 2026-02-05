@@ -8,12 +8,24 @@ interface StepBaseProps {
   title: string
   onFork: () => void
   onReset?: () => void
+  errorDetails?: string // Additional error details to show after step.error
   children: ReactNode
 }
 
-export function StepBase({ step, index, title, onFork, onReset, children }: StepBaseProps) {
+export function StepBase({
+  step,
+  index,
+  title,
+  onFork,
+  onReset,
+  errorDetails,
+  children,
+}: StepBaseProps) {
   const [showDetails, setShowDetails] = useState(false)
   const canReset = step.status === 'complete' || step.status === 'error'
+
+  // Build error message with optional details
+  const errorMessage = step.error && errorDetails ? `${step.error}: ${errorDetails}` : step.error
 
   return (
     <div className={`step step-${step.status}`}>
@@ -35,7 +47,7 @@ export function StepBase({ step, index, title, onFork, onReset, children }: Step
 
       <div className="step-content">{children}</div>
 
-      {step.error && <div className="step-error-message">{step.error}</div>}
+      {errorMessage && <div className="step-error-message">{errorMessage}</div>}
 
       {step.httpExchange && (
         <div className="step-details-toggle">

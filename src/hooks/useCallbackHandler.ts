@@ -48,6 +48,14 @@ export function useCallbackHandler() {
     // Set this flow as active
     dispatch({ type: 'SET_ACTIVE_FLOW', flowId: flow.id })
 
+    // Common callback data to store regardless of outcome
+    const commonCallbackData = {
+      state: callbackData.state ?? undefined,
+      iss: callbackData.iss ?? undefined,
+      extraParams: callbackData.extraParams ?? undefined,
+      callbackUrl: callbackData.callbackUrl,
+    }
+
     // Verify state matches
     if (callbackData.state !== redirectState.state) {
       dispatch({
@@ -57,6 +65,7 @@ export function useCallbackHandler() {
         updates: {
           status: 'error',
           error: 'State mismatch - possible CSRF attack',
+          ...commonCallbackData,
         } as Partial<Step>,
       })
       clearCallbackData()
@@ -74,6 +83,7 @@ export function useCallbackHandler() {
           status: 'error',
           error: callbackData.error,
           errorDescription: callbackData.error_description ?? undefined,
+          ...commonCallbackData,
         } as Partial<Step>,
       })
       clearCallbackData()
@@ -91,6 +101,7 @@ export function useCallbackHandler() {
           status: 'complete',
           code: callbackData.code,
           completedAt: Date.now(),
+          ...commonCallbackData,
         } as Partial<Step>,
       })
 
