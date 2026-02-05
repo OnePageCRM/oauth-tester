@@ -241,6 +241,14 @@ export function RegistrationStep({
               </div>
             )
           })}
+          {step.httpExchange?.request.url && (
+            <div className="metadata-item">
+              <label>Registration URL</label>
+              <div className="step-value" style={{ wordBreak: 'break-all' }}>
+                {step.httpExchange.request.url}
+              </div>
+            </div>
+          )}
         </div>
       ) : showForm ? (
         <div className="step-form">

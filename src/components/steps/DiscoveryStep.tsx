@@ -103,6 +103,14 @@ export function DiscoveryStep({ step, index, onFork, onDiscover, onReset }: Disc
               <div className="step-value">{formatValue(value)}</div>
             </div>
           ))}
+          {step.httpExchange?.request.url && (
+            <div className="metadata-item">
+              <label>Discovery URL</label>
+              <div className="step-value" style={{ wordBreak: 'break-all' }}>
+                {step.httpExchange.request.url}
+              </div>
+            </div>
+          )}
         </div>
       ) : showForm ? (
         <div className="step-form">
