@@ -921,7 +921,7 @@ describe('oauth', () => {
       const result = await refreshToken({
         tokenEndpoint: 'https://auth.example.com/token',
         refreshToken: 'old-refresh-token',
-        clientId: 'test-client',
+        clientIdPost: 'test-client',
       })
 
       expect(result.tokens.access_token).toBe('new-access-token')
@@ -954,8 +954,8 @@ describe('oauth', () => {
       await refreshToken({
         tokenEndpoint: 'https://auth.example.com/token',
         refreshToken: 'refresh-token',
-        clientId: 'test-client',
-        clientSecret: 'test-secret',
+        clientIdBasic: 'test-client',
+        clientSecretBasic: 'test-secret',
       })
 
       const request = proxyFetchSpy.mock.calls[0][0]
@@ -988,7 +988,7 @@ describe('oauth', () => {
       await refreshToken({
         tokenEndpoint: 'https://auth.example.com/token',
         refreshToken: 'my-refresh-token',
-        clientId: 'my-client-id',
+        clientIdPost: 'my-client-id',
       })
 
       const request = proxyFetchSpy.mock.calls[0][0]
@@ -1025,7 +1025,7 @@ describe('oauth', () => {
       await refreshToken({
         tokenEndpoint: 'https://auth.example.com/token',
         refreshToken: 'refresh-token',
-        clientId: 'client-id',
+        clientIdPost: 'client-id',
         scope: 'openid profile',
       })
 
@@ -1062,7 +1062,7 @@ describe('oauth', () => {
         refreshToken({
           tokenEndpoint: 'https://auth.example.com/token',
           refreshToken: 'refresh-token',
-          clientId: 'client-id',
+          clientIdPost: 'client-id',
         })
       ).rejects.toThrow('Refresh response missing access_token')
     })

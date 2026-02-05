@@ -24,6 +24,7 @@ import type {
 } from '../types'
 import type { AuthorizationFormData } from '../components/steps/AuthorizationStep'
 import type { TokenFormData } from '../components/steps/TokenStep'
+import type { RefreshFormData } from '../components/steps/RefreshStep'
 
 export function useFlowActions() {
   const { activeFlow, dispatch } = useApp()
@@ -538,9 +539,18 @@ export function useFlowActions() {
 
     const refreshStep = activeFlow.steps[refreshIndex]
 
-    // Reset to pending
+    // Reset to pending - clear all request and response fields
     updateStep(refreshStep.id, {
       status: 'pending',
+      grantType: undefined,
+      refreshToken: undefined,
+      scope: undefined,
+      tokenEndpointAuthMethod: undefined,
+      clientIdBasic: undefined,
+      clientSecretBasic: undefined,
+      clientIdPost: undefined,
+      clientSecretPost: undefined,
+      tokenEndpoint: undefined,
       tokens: undefined,
       httpExchange: undefined,
       completedAt: undefined,
@@ -552,69 +562,94 @@ export function useFlowActions() {
   }, [activeFlow, updateStep, truncateSteps])
 
   // Handle Token Refresh
-  const handleRefresh = useCallback(async () => {
-    if (!activeFlow?.metadata?.token_endpoint) return
-    if (!activeFlow.tokens?.refresh_token) return
+  const handleRefresh = useCallback(
+    async (formData: RefreshFormData) => {
+      if (!activeFlow?.metadata?.token_endpoint) return
 
-    const refreshStepData = activeFlow.steps.find((s) => s.type === 'refresh')
-    if (!refreshStepData) return
+      const refreshStepData = activeFlow.steps.find((s) => s.type === 'refresh')
+      if (!refreshStepData) return
 
-    // Get client credentials
-    const clientId = activeFlow.credentials?.client_id
-    if (!clientId) return
+      const tokenEndpoint = activeFlow.metadata.token_endpoint
 
-    // Mark as in progress
-    updateStep(refreshStepData.id, { status: 'in_progress' })
+      // Mark as in progress
+      updateStep(refreshStepData.id, { status: 'in_progress' })
 
-    try {
-      const { tokens, exchange } = await refreshToken({
-        tokenEndpoint: activeFlow.metadata.token_endpoint,
-        refreshToken: activeFlow.tokens.refresh_token,
-        clientId,
-        clientSecret: activeFlow.credentials?.client_secret,
-      })
+      try {
+        const { tokens, exchange } = await refreshToken({
+          tokenEndpoint,
+          refreshToken: formData.refreshToken,
+          scope: formData.scope || undefined,
+          tokenEndpointAuthMethod: formData.tokenEndpointAuthMethod,
+          clientIdBasic: formData.clientIdBasic || undefined,
+          clientSecretBasic: formData.clientSecretBasic || undefined,
+          clientIdPost: formData.clientIdPost || undefined,
+          clientSecretPost: formData.clientSecretPost || undefined,
+        })
 
-      // Mark as complete
-      updateStep(refreshStepData.id, {
-        status: 'complete',
-        tokens,
-        httpExchange: exchange,
-        completedAt: Date.now(),
-        error: undefined,
-      } as Partial<Step>)
+        // Mark as complete with request params stored
+        updateStep(refreshStepData.id, {
+          status: 'complete',
+          grantType: formData.grantType,
+          refreshToken: formData.refreshToken,
+          scope: formData.scope || undefined,
+          tokenEndpointAuthMethod: formData.tokenEndpointAuthMethod,
+          clientIdBasic: formData.clientIdBasic || undefined,
+          clientSecretBasic: formData.clientSecretBasic || undefined,
+          clientIdPost: formData.clientIdPost || undefined,
+          clientSecretPost: formData.clientSecretPost || undefined,
+          tokenEndpoint,
+          tokens,
+          httpExchange: exchange,
+          completedAt: Date.now(),
+          error: undefined,
+        } as Partial<Step>)
 
-      // Update flow state with new tokens
-      // Merge with existing tokens (refresh might not return all fields)
-      updateFlow({
-        tokens: {
-          ...activeFlow.tokens,
-          ...tokens,
-        },
-      })
+        // Update flow state with new tokens
+        // Merge with existing tokens (refresh might not return all fields)
+        updateFlow({
+          tokens: {
+            ...activeFlow.tokens,
+            ...tokens,
+          },
+        })
 
-      // If we got a new refresh token, we can refresh again
-      // Add another refresh step if there isn't one pending
-      const hasAnotherRefreshStep = activeFlow.steps.some(
-        (s) => s.type === 'refresh' && s.id !== refreshStepData.id && s.status === 'pending'
-      )
-      if (tokens.refresh_token && !hasAnotherRefreshStep) {
-        const newRefreshStep: RefreshStep = {
-          id: generateId(),
-          type: 'refresh',
-          status: 'pending',
+        // If we got a new refresh token, we can refresh again
+        // Add another refresh step if there isn't one pending
+        const hasAnotherRefreshStep = activeFlow.steps.some(
+          (s) => s.type === 'refresh' && s.id !== refreshStepData.id && s.status === 'pending'
+        )
+        if (tokens.refresh_token && !hasAnotherRefreshStep) {
+          const newRefreshStep: RefreshStep = {
+            id: generateId(),
+            type: 'refresh',
+            status: 'pending',
+          }
+          addStep(newRefreshStep)
         }
-        addStep(newRefreshStep)
+      } catch (error) {
+        const exchange =
+          error instanceof FetchError || error instanceof ProxyFetchError
+            ? error.exchange
+            : undefined
+        updateStep(refreshStepData.id, {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Token refresh failed',
+          httpExchange: exchange,
+          // Store request params on error
+          grantType: formData.grantType,
+          refreshToken: formData.refreshToken,
+          scope: formData.scope || undefined,
+          tokenEndpointAuthMethod: formData.tokenEndpointAuthMethod,
+          clientIdBasic: formData.clientIdBasic || undefined,
+          clientSecretBasic: formData.clientSecretBasic || undefined,
+          clientIdPost: formData.clientIdPost || undefined,
+          clientSecretPost: formData.clientSecretPost || undefined,
+          tokenEndpoint,
+        } as Partial<Step>)
       }
-    } catch (error) {
-      const exchange =
-        error instanceof FetchError || error instanceof ProxyFetchError ? error.exchange : undefined
-      updateStep(refreshStepData.id, {
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Token refresh failed',
-        httpExchange: exchange,
-      } as Partial<Step>)
-    }
-  }, [activeFlow, updateStep, updateFlow, addStep])
+    },
+    [activeFlow, updateStep, updateFlow, addStep]
+  )
 
   return {
     handleStartSubmit,

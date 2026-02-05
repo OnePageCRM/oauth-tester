@@ -409,19 +409,23 @@ export async function exchangeToken(
 export interface TokenRefreshParams {
   tokenEndpoint: string
   refreshToken: string
-  clientId: string
-  clientSecret?: string
   scope?: string // Optional: request different scope
+  tokenEndpointAuthMethod?: string
+  clientIdBasic?: string
+  clientSecretBasic?: string
+  clientIdPost?: string
+  clientSecretPost?: string
 }
 
 // Refresh access token using refresh_token grant
 export async function refreshToken(
   params: TokenRefreshParams
 ): Promise<{ tokens: TokenResponse; exchange: HttpExchange }> {
+  const authMethod = params.tokenEndpointAuthMethod ?? 'client_secret_basic'
+
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
     refresh_token: params.refreshToken,
-    client_id: params.clientId,
   })
 
   // Add scope if provided (to request narrower scope)
@@ -429,15 +433,27 @@ export async function refreshToken(
     body.set('scope', params.scope)
   }
 
-  // Build headers - use Basic auth if client_secret is provided
+  // Build headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     Accept: 'application/json',
   }
 
-  if (params.clientSecret) {
-    const credentials = btoa(`${params.clientId}:${params.clientSecret}`)
+  // Handle auth method
+  if (authMethod === 'client_secret_basic' && params.clientIdBasic && params.clientSecretBasic) {
+    // Basic auth - credentials in Authorization header only
+    const credentials = btoa(`${params.clientIdBasic}:${params.clientSecretBasic}`)
     headers['Authorization'] = `Basic ${credentials}`
+  }
+
+  // Add client_id to body only if Client ID (Post body) has a value
+  if (params.clientIdPost) {
+    body.set('client_id', params.clientIdPost)
+  }
+
+  // Add client_secret to body only for client_secret_post method
+  if (authMethod === 'client_secret_post' && params.clientSecretPost) {
+    body.set('client_secret', params.clientSecretPost)
   }
 
   const request: HttpRequest = {

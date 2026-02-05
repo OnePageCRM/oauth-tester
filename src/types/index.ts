@@ -184,6 +184,17 @@ export interface TokenStep extends BaseStep {
 
 export interface RefreshStep extends BaseStep {
   type: 'refresh'
+  // Request fields
+  grantType?: string
+  refreshToken?: string
+  scope?: string
+  tokenEndpointAuthMethod?: string
+  clientIdBasic?: string
+  clientSecretBasic?: string
+  clientIdPost?: string
+  clientSecretPost?: string
+  tokenEndpoint?: string
+  // Response
   tokens?: TokenResponse
 }
 

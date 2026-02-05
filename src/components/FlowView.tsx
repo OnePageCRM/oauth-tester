@@ -142,7 +142,10 @@ export function FlowView() {
             onFork={onFork}
             onRefresh={handleRefresh}
             onReset={handleResetRefresh}
-            hasRefreshToken={!!activeFlow.tokens?.refresh_token}
+            refreshToken={activeFlow.tokens?.refresh_token}
+            clientId={activeFlow.credentials?.client_id}
+            clientSecret={activeFlow.credentials?.client_secret}
+            tokenEndpointAuthMethod={activeFlow.credentials?.token_endpoint_auth_method}
           />
         )
       case 'introspect':
