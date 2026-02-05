@@ -167,6 +167,18 @@ export interface CallbackStep extends BaseStep {
 
 export interface TokenStep extends BaseStep {
   type: 'token'
+  // Request fields (what was sent)
+  grantType?: string
+  code?: string
+  redirectUri?: string
+  codeVerifier?: string
+  tokenEndpointAuthMethod?: string
+  clientIdBasic?: string
+  clientSecretBasic?: string // Stored but displayed masked
+  clientIdPost?: string
+  clientSecretPost?: string // Stored but displayed masked
+  tokenEndpoint?: string
+  // Response
   tokens?: TokenResponse
 }
 

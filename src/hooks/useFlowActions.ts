@@ -23,6 +23,7 @@ import type {
   RegistrationRequest,
 } from '../types'
 import type { AuthorizationFormData } from '../components/steps/AuthorizationStep'
+import type { TokenFormData } from '../components/steps/TokenStep'
 
 export function useFlowActions() {
   const { activeFlow, dispatch } = useApp()
@@ -418,9 +419,19 @@ export function useFlowActions() {
 
     const tokenStep = activeFlow.steps[tokenIndex]
 
-    // Reset to pending
+    // Reset to pending - clear all request and response fields
     updateStep(tokenStep.id, {
       status: 'pending',
+      grantType: undefined,
+      code: undefined,
+      redirectUri: undefined,
+      codeVerifier: undefined,
+      tokenEndpointAuthMethod: undefined,
+      clientIdBasic: undefined,
+      clientSecretBasic: undefined,
+      clientIdPost: undefined,
+      clientSecretPost: undefined,
+      tokenEndpoint: undefined,
       tokens: undefined,
       httpExchange: undefined,
       completedAt: undefined,
@@ -437,68 +448,87 @@ export function useFlowActions() {
   }, [activeFlow, updateStep, updateFlow, truncateSteps])
 
   // Handle Token Exchange
-  const handleTokenExchange = useCallback(async () => {
-    if (!activeFlow?.metadata?.token_endpoint) return
+  const handleTokenExchange = useCallback(
+    async (formData: TokenFormData) => {
+      if (!activeFlow?.metadata?.token_endpoint) return
 
-    // Find the authorization step to get codeVerifier and redirectUri
-    const authStep = activeFlow.steps.find((s) => s.type === 'authorization') as
-      | AuthorizationStep
-      | undefined
-    if (!authStep?.codeVerifier) return
+      const tokenStep = activeFlow.steps.find((s) => s.type === 'token')
+      if (!tokenStep) return
 
-    // Find the callback step to get the code
-    const callbackStep = activeFlow.steps.find((s) => s.type === 'callback')
-    if (!callbackStep || callbackStep.status !== 'complete') return
-    const code = (callbackStep as CallbackStep).code
-    if (!code) return
+      const tokenEndpoint = activeFlow.metadata.token_endpoint
 
-    const tokenStep = activeFlow.steps.find((s) => s.type === 'token')
-    if (!tokenStep) return
+      // Mark as in progress
+      updateStep(tokenStep.id, { status: 'in_progress' })
 
-    // Mark as in progress
-    updateStep(tokenStep.id, { status: 'in_progress' })
+      try {
+        const { tokens, exchange } = await exchangeToken({
+          tokenEndpoint,
+          code: formData.code,
+          redirectUri: formData.redirectUri,
+          codeVerifier: formData.codeVerifier,
+          tokenEndpointAuthMethod: formData.tokenEndpointAuthMethod,
+          clientIdBasic: formData.clientIdBasic || undefined,
+          clientSecretBasic: formData.clientSecretBasic || undefined,
+          clientIdPost: formData.clientIdPost || undefined,
+          clientSecretPost: formData.clientSecretPost || undefined,
+        })
 
-    try {
-      const { tokens, exchange } = await exchangeToken({
-        tokenEndpoint: activeFlow.metadata.token_endpoint,
-        code,
-        redirectUri: authStep.redirectUri ?? '',
-        clientId: authStep.clientId ?? activeFlow.credentials?.client_id ?? '',
-        clientSecret: activeFlow.credentials?.client_secret,
-        codeVerifier: authStep.codeVerifier,
-      })
+        // Mark as complete with request params stored
+        updateStep(tokenStep.id, {
+          status: 'complete',
+          grantType: formData.grantType,
+          code: formData.code,
+          redirectUri: formData.redirectUri,
+          codeVerifier: formData.codeVerifier,
+          tokenEndpointAuthMethod: formData.tokenEndpointAuthMethod,
+          clientIdBasic: formData.clientIdBasic || undefined,
+          clientSecretBasic: formData.clientSecretBasic || undefined,
+          clientIdPost: formData.clientIdPost || undefined,
+          clientSecretPost: formData.clientSecretPost || undefined,
+          tokenEndpoint,
+          tokens,
+          httpExchange: exchange,
+          completedAt: Date.now(),
+          error: undefined,
+        } as Partial<Step>)
 
-      // Mark as complete
-      updateStep(tokenStep.id, {
-        status: 'complete',
-        tokens,
-        httpExchange: exchange,
-        completedAt: Date.now(),
-        error: undefined,
-      } as Partial<Step>)
+        // Update flow state
+        updateFlow({ tokens })
 
-      // Update flow state
-      updateFlow({ tokens })
-
-      // Add refresh step if we have a refresh token
-      if (tokens.refresh_token) {
-        const refreshStep: RefreshStep = {
-          id: generateId(),
-          type: 'refresh',
-          status: 'pending',
+        // Add refresh step if we have a refresh token
+        if (tokens.refresh_token) {
+          const refreshStep: RefreshStep = {
+            id: generateId(),
+            type: 'refresh',
+            status: 'pending',
+          }
+          addStep(refreshStep)
         }
-        addStep(refreshStep)
+      } catch (error) {
+        const exchange =
+          error instanceof FetchError || error instanceof ProxyFetchError
+            ? error.exchange
+            : undefined
+        updateStep(tokenStep.id, {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Token exchange failed',
+          httpExchange: exchange,
+          // Still store the request params on error
+          grantType: formData.grantType,
+          code: formData.code,
+          redirectUri: formData.redirectUri,
+          codeVerifier: formData.codeVerifier,
+          tokenEndpointAuthMethod: formData.tokenEndpointAuthMethod,
+          clientIdBasic: formData.clientIdBasic || undefined,
+          clientSecretBasic: formData.clientSecretBasic || undefined,
+          clientIdPost: formData.clientIdPost || undefined,
+          clientSecretPost: formData.clientSecretPost || undefined,
+          tokenEndpoint,
+        } as Partial<Step>)
       }
-    } catch (error) {
-      const exchange =
-        error instanceof FetchError || error instanceof ProxyFetchError ? error.exchange : undefined
-      updateStep(tokenStep.id, {
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Token exchange failed',
-        httpExchange: exchange,
-      } as Partial<Step>)
-    }
-  }, [activeFlow, updateStep, updateFlow, addStep])
+    },
+    [activeFlow, updateStep, updateFlow, addStep]
+  )
 
   // Reset Refresh step
   const handleResetRefresh = useCallback(() => {

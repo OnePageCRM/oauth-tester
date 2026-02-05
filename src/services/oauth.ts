@@ -342,32 +342,48 @@ export interface TokenExchangeParams {
   tokenEndpoint: string
   code: string
   redirectUri: string
-  clientId: string
-  clientSecret?: string
   codeVerifier: string
+  tokenEndpointAuthMethod?: string // client_secret_basic, client_secret_post, none
+  clientIdBasic?: string
+  clientSecretBasic?: string
+  clientIdPost?: string
+  clientSecretPost?: string
 }
 
 // Exchange authorization code for tokens
 export async function exchangeToken(
   params: TokenExchangeParams
 ): Promise<{ tokens: TokenResponse; exchange: HttpExchange }> {
+  const authMethod = params.tokenEndpointAuthMethod ?? 'client_secret_basic'
+
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code: params.code,
     redirect_uri: params.redirectUri,
-    client_id: params.clientId,
     code_verifier: params.codeVerifier,
   })
 
-  // Build headers - use Basic auth if client_secret is provided
+  // Build headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     Accept: 'application/json',
   }
 
-  if (params.clientSecret) {
-    const credentials = btoa(`${params.clientId}:${params.clientSecret}`)
+  // Handle auth method
+  if (authMethod === 'client_secret_basic' && params.clientIdBasic && params.clientSecretBasic) {
+    // Basic auth - credentials in Authorization header only
+    const credentials = btoa(`${params.clientIdBasic}:${params.clientSecretBasic}`)
     headers['Authorization'] = `Basic ${credentials}`
+  }
+
+  // Add client_id to body only if Client ID (Post body) has a value
+  if (params.clientIdPost) {
+    body.set('client_id', params.clientIdPost)
+  }
+
+  // Add client_secret to body only for client_secret_post method
+  if (authMethod === 'client_secret_post' && params.clientSecretPost) {
+    body.set('client_secret', params.clientSecretPost)
   }
 
   const request: HttpRequest = {

@@ -112,7 +112,10 @@ export function FlowView() {
         )
       case 'callback':
         return <CallbackStep key={step.id} step={step} index={index} onFork={onFork} />
-      case 'token':
+      case 'token': {
+        // Get pre-fill values from flow state
+        const authStep = activeFlow.steps.find((s) => s.type === 'authorization')
+        const callbackStep = activeFlow.steps.find((s) => s.type === 'callback')
         return (
           <TokenStep
             key={step.id}
@@ -121,8 +124,15 @@ export function FlowView() {
             onFork={onFork}
             onExchange={handleTokenExchange}
             onReset={handleResetToken}
+            code={callbackStep?.status === 'complete' ? callbackStep.code : undefined}
+            redirectUri={authStep?.redirectUri}
+            clientId={authStep?.clientId ?? activeFlow.credentials?.client_id}
+            codeVerifier={authStep?.codeVerifier}
+            clientSecret={activeFlow.credentials?.client_secret}
+            tokenEndpointAuthMethod={activeFlow.credentials?.token_endpoint_auth_method}
           />
         )
+      }
       case 'refresh':
         return (
           <RefreshStep

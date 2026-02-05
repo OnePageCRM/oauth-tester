@@ -603,8 +603,8 @@ describe('oauth', () => {
         tokenEndpoint: 'https://auth.example.com/token',
         code: 'auth-code-123',
         redirectUri: 'http://localhost:3000/callback',
-        clientId: 'test-client',
         codeVerifier: 'verifier-123',
+        clientIdBasic: 'test-client',
       })
 
       expect(result.tokens.access_token).toBe('access-token-123')
@@ -638,9 +638,9 @@ describe('oauth', () => {
         tokenEndpoint: 'https://auth.example.com/token',
         code: 'auth-code',
         redirectUri: 'http://localhost:3000/callback',
-        clientId: 'test-client',
-        clientSecret: 'test-secret',
         codeVerifier: 'verifier',
+        clientIdBasic: 'test-client',
+        clientSecretBasic: 'test-secret',
       })
 
       const request = proxyFetchSpy.mock.calls[0][0]
@@ -674,8 +674,9 @@ describe('oauth', () => {
         tokenEndpoint: 'https://auth.example.com/token',
         code: 'auth-code',
         redirectUri: 'http://localhost:3000/callback',
-        clientId: 'test-client',
         codeVerifier: 'verifier',
+        clientIdBasic: 'test-client',
+        // No clientSecretBasic - should not have auth header
       })
 
       const request = proxyFetchSpy.mock.calls[0][0]
@@ -710,8 +711,8 @@ describe('oauth', () => {
           tokenEndpoint: 'https://auth.example.com/token',
           code: 'auth-code',
           redirectUri: 'http://localhost:3000/callback',
-          clientId: 'test-client',
           codeVerifier: 'verifier',
+          clientIdBasic: 'test-client',
         })
       ).rejects.toThrow('Token response missing access_token')
     })
@@ -743,8 +744,8 @@ describe('oauth', () => {
         tokenEndpoint: 'https://auth.example.com/token',
         code: 'my-auth-code',
         redirectUri: 'http://localhost:3000/callback',
-        clientId: 'my-client-id',
         codeVerifier: 'my-code-verifier',
+        clientIdPost: 'my-client-id',
       })
 
       const request = proxyFetchSpy.mock.calls[0][0]
@@ -755,6 +756,124 @@ describe('oauth', () => {
       expect(body.get('redirect_uri')).toBe('http://localhost:3000/callback')
       expect(body.get('client_id')).toBe('my-client-id')
       expect(body.get('code_verifier')).toBe('my-code-verifier')
+    })
+
+    it('should use client_secret_basic auth by default', async () => {
+      const mockTokens = { access_token: 'token', token_type: 'Bearer' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockTokens),
+        },
+        data: mockTokens,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/token', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockTokens),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await exchangeToken({
+        tokenEndpoint: 'https://auth.example.com/token',
+        code: 'auth-code',
+        redirectUri: 'http://localhost:3000/callback',
+        codeVerifier: 'verifier',
+        clientIdBasic: 'test-client',
+        clientSecretBasic: 'test-secret',
+        // No tokenEndpointAuthMethod specified - defaults to client_secret_basic
+      })
+
+      const request = proxyFetchSpy.mock.calls[0][0]
+      expect(request.headers['Authorization']).toBe(`Basic ${btoa('test-client:test-secret')}`)
+      const body = new URLSearchParams(request.body as string)
+      expect(body.get('client_secret')).toBeNull()
+    })
+
+    it('should use client_secret_post auth when specified', async () => {
+      const mockTokens = { access_token: 'token', token_type: 'Bearer' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockTokens),
+        },
+        data: mockTokens,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/token', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockTokens),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await exchangeToken({
+        tokenEndpoint: 'https://auth.example.com/token',
+        code: 'auth-code',
+        redirectUri: 'http://localhost:3000/callback',
+        codeVerifier: 'verifier',
+        tokenEndpointAuthMethod: 'client_secret_post',
+        clientIdPost: 'test-client',
+        clientSecretPost: 'test-secret',
+      })
+
+      const request = proxyFetchSpy.mock.calls[0][0]
+      expect(request.headers['Authorization']).toBeUndefined()
+      const body = new URLSearchParams(request.body as string)
+      expect(body.get('client_id')).toBe('test-client')
+      expect(body.get('client_secret')).toBe('test-secret')
+    })
+
+    it('should not add any auth when method is none', async () => {
+      const mockTokens = { access_token: 'token', token_type: 'Bearer' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockTokens),
+        },
+        data: mockTokens,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/token', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockTokens),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await exchangeToken({
+        tokenEndpoint: 'https://auth.example.com/token',
+        code: 'auth-code',
+        redirectUri: 'http://localhost:3000/callback',
+        codeVerifier: 'verifier',
+        tokenEndpointAuthMethod: 'none',
+        clientIdBasic: 'test-client',
+        clientSecretBasic: 'test-secret',
+      })
+
+      const request = proxyFetchSpy.mock.calls[0][0]
+      expect(request.headers['Authorization']).toBeUndefined()
+      const body = new URLSearchParams(request.body as string)
+      expect(body.get('client_secret')).toBeNull()
     })
   })
 
