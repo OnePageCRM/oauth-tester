@@ -11,7 +11,8 @@
     "lint:fix": "eslint --fix . && prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "qa": "npm run lint && npm run test && npm run build"
+    "test:coverage": "vitest run --coverage",
+    "qa": "npm run lint && npm run test:coverage && npm run build"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

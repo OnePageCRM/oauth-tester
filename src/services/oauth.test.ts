@@ -260,6 +260,79 @@ describe('oauth', () => {
         expect((error as FetchError).message).toBe('invalid_request: Missing required parameter')
       }
     })
+
+    it('should handle network error with CORS message for cross-origin', async () => {
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Failed to fetch'))
+
+      try {
+        await discoverMetadata('https://auth.example.com')
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(FetchError)
+        expect((error as FetchError).message).toContain('CORS error')
+      }
+    })
+
+    it('should handle network error for same-origin request', async () => {
+      // Mock same-origin request
+      mockLocation.origin = 'https://auth.example.com'
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Failed to fetch'))
+
+      try {
+        await discoverMetadata('https://auth.example.com')
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(FetchError)
+        expect((error as FetchError).message).toBe(
+          'Failed to fetch: Server unreachable or connection refused'
+        )
+      }
+
+      // Reset mock location
+      mockLocation.origin = 'http://localhost:3000'
+    })
+
+    it('should handle CORS error message in error', async () => {
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('CORS policy blocked'))
+
+      try {
+        await discoverMetadata('https://auth.example.com')
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(FetchError)
+        expect((error as FetchError).message).toBe('Failed to fetch: CORS policy blocked')
+      }
+    })
+
+    it('should handle generic network error', async () => {
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Connection reset'))
+
+      try {
+        await discoverMetadata('https://auth.example.com')
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(FetchError)
+        expect((error as FetchError).message).toBe('Connection reset')
+      }
+    })
+
+    it('should handle error with message property in response', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: () => Promise.resolve(JSON.stringify({ message: 'Server overloaded' })),
+      })
+
+      try {
+        await discoverMetadata('https://auth.example.com')
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(FetchError)
+        expect((error as FetchError).message).toBe('Server overloaded')
+      }
+    })
   })
 
   describe('registerClient', () => {
@@ -379,6 +452,108 @@ describe('oauth', () => {
       const requestBody = JSON.parse(proxyFetchSpy.mock.calls[0][0].body as string)
       expect(requestBody.client_name).toBeUndefined()
       expect(requestBody.scope).toBe('')
+    })
+
+    it('should parse JWKS JSON when provided', async () => {
+      const mockResponse = { client_id: 'test-id' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockResponse),
+        },
+        data: mockResponse,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/register', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockResponse),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      const jwks = { keys: [{ kty: 'RSA', n: 'abc', e: 'AQAB' }] }
+      await registerClient('https://auth.example.com/register', {
+        redirect_uris: ['http://localhost:3000/callback'],
+        jwks: JSON.stringify(jwks),
+      })
+
+      const requestBody = JSON.parse(proxyFetchSpy.mock.calls[0][0].body as string)
+      expect(requestBody.jwks).toEqual(jwks)
+    })
+
+    it('should send invalid JWKS as-is when not valid JSON', async () => {
+      const mockResponse = { client_id: 'test-id' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockResponse),
+        },
+        data: mockResponse,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/register', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockResponse),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await registerClient('https://auth.example.com/register', {
+        redirect_uris: ['http://localhost:3000/callback'],
+        jwks: 'not-valid-json',
+      })
+
+      const requestBody = JSON.parse(proxyFetchSpy.mock.calls[0][0].body as string)
+      expect(requestBody.jwks).toBe('not-valid-json')
+    })
+
+    it('should handle array fields correctly', async () => {
+      const mockResponse = { client_id: 'test-id' }
+
+      const proxyFetchSpy = vi.spyOn(proxy, 'proxyFetch').mockResolvedValueOnce({
+        response: {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          body: JSON.stringify(mockResponse),
+        },
+        data: mockResponse,
+        exchange: {
+          request: { method: 'POST', url: 'https://auth.example.com/register', headers: {} },
+          response: {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            body: JSON.stringify(mockResponse),
+          },
+          timestamp: Date.now(),
+        },
+      })
+
+      await registerClient('https://auth.example.com/register', {
+        redirect_uris: ['http://localhost:3000/callback', ''],
+        grant_types: ['authorization_code', ' '], // Space should become empty string
+        response_types: undefined, // Should be omitted
+        contacts: ['admin@example.com'],
+      })
+
+      const requestBody = JSON.parse(proxyFetchSpy.mock.calls[0][0].body as string)
+      expect(requestBody.redirect_uris).toEqual(['http://localhost:3000/callback'])
+      expect(requestBody.grant_types).toEqual(['authorization_code', ''])
+      expect(requestBody.response_types).toBeUndefined()
+      expect(requestBody.contacts).toEqual(['admin@example.com'])
     })
   })
 
