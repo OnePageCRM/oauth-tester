@@ -297,10 +297,10 @@ export async function registerClient(
     throw new ProxyFetchError('Registration response missing client_id', exchange)
   }
 
+  // Capture all fields from registration response
   const credentials: ClientCredentials = {
+    ...responseData,
     client_id: responseData.client_id as string,
-    client_secret: responseData.client_secret as string | undefined,
-    redirect_uris: responseData.redirect_uris as string[] | undefined,
   }
 
   return { credentials, exchange }

@@ -208,19 +208,38 @@ export function RegistrationStep({
       {isComplete && step.credentials && !isEditing ? (
         <div className="metadata-grid">
           <div className="metadata-item">
-            <label>Client ID</label>
-            <div className="step-value">{step.credentials.client_id}</div>
-          </div>
-          {step.credentials.client_secret && (
-            <div className="metadata-item">
-              <label>Client Secret</label>
-              <div className="step-value">********</div>
-            </div>
-          )}
-          <div className="metadata-item">
             <label>Mode</label>
             <div className="step-value">{step.mode === 'dynamic' ? 'Dynamic' : 'Manual'}</div>
           </div>
+          {Object.entries(step.credentials).map(([key, value]) => {
+            if (value === undefined || value === null) return null
+            // Format the display value
+            let displayValue: string
+            if (key === 'client_secret') {
+              displayValue = '********'
+            } else if (Array.isArray(value)) {
+              displayValue = value.join(', ')
+            } else if (typeof value === 'object') {
+              displayValue = JSON.stringify(value)
+            } else if (key === 'client_id_issued_at') {
+              displayValue = new Date(Number(value) * 1000).toLocaleString()
+            } else if (key === 'client_secret_expires_at') {
+              displayValue = Number(value) === 0 ? 'Never' : new Date(Number(value) * 1000).toLocaleString()
+            } else {
+              displayValue = String(value)
+            }
+            // Format the label (snake_case to Title Case)
+            const label = key
+              .split('_')
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ')
+            return (
+              <div key={key} className="metadata-item">
+                <label>{label}</label>
+                <div className="step-value">{displayValue}</div>
+              </div>
+            )
+          })}
         </div>
       ) : showForm ? (
         <div className="step-form">

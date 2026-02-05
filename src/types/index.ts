@@ -17,7 +17,24 @@ export interface ServerMetadata {
 export interface ClientCredentials {
   client_id: string
   client_secret?: string
+  client_id_issued_at?: number
+  client_secret_expires_at?: number
   redirect_uris?: string[]
+  token_endpoint_auth_method?: string
+  grant_types?: string[]
+  response_types?: string[]
+  client_name?: string
+  client_uri?: string
+  logo_uri?: string
+  scope?: string
+  contacts?: string[]
+  tos_uri?: string
+  policy_uri?: string
+  jwks_uri?: string
+  jwks?: Record<string, unknown>
+  software_id?: string
+  software_version?: string
+  [key: string]: unknown // Allow additional server-specific fields
 }
 
 // Dynamic client registration request (RFC 7591)
