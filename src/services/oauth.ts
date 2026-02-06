@@ -78,8 +78,8 @@ function formatNetworkError(error: Error, requestUrl: string): string {
   return message
 }
 
-// Fetch with HTTP exchange capture
-async function fetchWithCapture(
+// Fetch with HTTP exchange capture (direct browser fetch)
+export async function fetchWithCapture(
   request: HttpRequest
 ): Promise<{ response: HttpResponse; data: unknown; exchange: HttpExchange }> {
   const timestamp = Date.now()
@@ -151,8 +151,11 @@ export class FetchError extends Error {
 
 // Discover OAuth server metadata
 export async function discoverMetadata(
-  serverUrl: string
+  serverUrl: string,
+  useProxy: boolean = false
 ): Promise<{ metadata: ServerMetadata; exchange: HttpExchange }> {
+  const doFetch = useProxy ? proxyFetch : fetchWithCapture
+
   // Try OAuth 2.0 metadata first
   const oauthUrl = buildDiscoveryUrl(serverUrl)
 
@@ -165,11 +168,13 @@ export async function discoverMetadata(
   }
 
   try {
-    const { data, exchange } = await fetchWithCapture(request)
+    const { data, exchange } = await doFetch(request)
     return { metadata: data as ServerMetadata, exchange }
   } catch (error) {
     // If OAuth metadata fails, try OIDC discovery
-    if (error instanceof FetchError && error.exchange.response?.status === 404) {
+    const isFetchError = error instanceof FetchError || error instanceof ProxyFetchError
+    const is404 = isFetchError && error.exchange.response?.status === 404
+    if (is404) {
       const oidcUrl = buildOIDCDiscoveryUrl(serverUrl)
       const oidcRequest: HttpRequest = {
         method: 'GET',
@@ -179,7 +184,7 @@ export async function discoverMetadata(
         },
       }
 
-      const { data, exchange } = await fetchWithCapture(oidcRequest)
+      const { data, exchange } = await doFetch(oidcRequest)
       return { metadata: data as ServerMetadata, exchange }
     }
 
@@ -224,7 +229,8 @@ function processArrayField(values: string[] | undefined): string[] | undefined {
 // Dynamic client registration (RFC 7591)
 export async function registerClient(
   registrationEndpoint: string,
-  registrationRequest: RegistrationRequest
+  registrationRequest: RegistrationRequest,
+  useProxy: boolean = true
 ): Promise<{ credentials: ClientCredentials; exchange: HttpExchange }> {
   const requestBody: Record<string, unknown> = {}
 
@@ -287,13 +293,14 @@ export async function registerClient(
     body: JSON.stringify(requestBody),
   }
 
-  // Use proxy for registration - CORS not allowed on registration endpoints
-  const { data, exchange } = await proxyFetch(request)
+  // Use proxy or direct fetch based on flag
+  const doFetch = useProxy ? proxyFetch : fetchWithCapture
+  const { data, exchange } = await doFetch(request)
 
   const responseData = data as Record<string, unknown>
 
   if (!responseData.client_id) {
-    throw new ProxyFetchError('Registration response missing client_id', exchange)
+    throw new FetchError('Registration response missing client_id', exchange)
   }
 
   // Capture all fields from registration response
@@ -348,6 +355,7 @@ export interface TokenExchangeParams {
   clientSecretBasic?: string
   clientIdPost?: string
   clientSecretPost?: string
+  useProxy?: boolean // true = backend proxy, false = direct browser fetch
 }
 
 // Exchange authorization code for tokens
@@ -393,13 +401,15 @@ export async function exchangeToken(
     body: body.toString(),
   }
 
-  // Use proxy for token exchange - CORS may not be allowed depending on client type
-  const { data, exchange } = await proxyFetch(request)
+  // Use proxy or direct fetch based on flag (default: proxy for confidential clients)
+  const useProxy = params.useProxy ?? true
+  const doFetch = useProxy ? proxyFetch : fetchWithCapture
+  const { data, exchange } = await doFetch(request)
 
   const tokens = data as TokenResponse
 
   if (!tokens.access_token) {
-    throw new ProxyFetchError('Token response missing access_token', exchange)
+    throw new FetchError('Token response missing access_token', exchange)
   }
 
   return { tokens, exchange }
@@ -415,6 +425,7 @@ export interface TokenRefreshParams {
   clientSecretBasic?: string
   clientIdPost?: string
   clientSecretPost?: string
+  useProxy?: boolean // true = backend proxy, false = direct browser fetch
 }
 
 // Refresh access token using refresh_token grant
@@ -463,13 +474,15 @@ export async function refreshToken(
     body: body.toString(),
   }
 
-  // Use proxy for token refresh - CORS may not be allowed
-  const { data, exchange } = await proxyFetch(request)
+  // Use proxy or direct fetch based on flag (default: proxy for confidential clients)
+  const useProxy = params.useProxy ?? true
+  const doFetch = useProxy ? proxyFetch : fetchWithCapture
+  const { data, exchange } = await doFetch(request)
 
   const tokens = data as TokenResponse
 
   if (!tokens.access_token) {
-    throw new ProxyFetchError('Refresh response missing access_token', exchange)
+    throw new FetchError('Refresh response missing access_token', exchange)
   }
 
   return { tokens, exchange }

@@ -158,7 +158,7 @@ export function useFlowActions() {
   )
 
   // Handle Discovery step
-  const handleDiscover = useCallback(async () => {
+  const handleDiscover = useCallback(async (useProxy: boolean = false) => {
     if (!activeFlow?.serverUrl) return
 
     const discoveryStep = activeFlow.steps.find((s) => s.type === 'discovery')
@@ -168,7 +168,7 @@ export function useFlowActions() {
     updateStep(discoveryStep.id, { status: 'in_progress' })
 
     try {
-      const { metadata, exchange } = await discoverMetadata(activeFlow.serverUrl)
+      const { metadata, exchange } = await discoverMetadata(activeFlow.serverUrl, useProxy)
 
       // Mark as complete with metadata (clear any previous error)
       updateStep(discoveryStep.id, {
@@ -230,7 +230,7 @@ export function useFlowActions() {
 
   // Handle Dynamic Registration
   const handleRegister = useCallback(
-    async (registrationRequest: RegistrationRequest) => {
+    async (registrationRequest: RegistrationRequest, useProxy: boolean = true) => {
       if (!activeFlow?.metadata?.registration_endpoint) return
 
       const registrationStep = activeFlow.steps.find((s) => s.type === 'registration')
@@ -242,7 +242,8 @@ export function useFlowActions() {
       try {
         const { credentials, exchange } = await registerClient(
           activeFlow.metadata.registration_endpoint,
-          registrationRequest
+          registrationRequest,
+          useProxy
         )
 
         // Mark as complete (clear any previous error)
@@ -472,6 +473,7 @@ export function useFlowActions() {
           clientSecretBasic: formData.clientSecretBasic || undefined,
           clientIdPost: formData.clientIdPost || undefined,
           clientSecretPost: formData.clientSecretPost || undefined,
+          useProxy: formData.useProxy,
         })
 
         // Mark as complete with request params stored
@@ -585,6 +587,7 @@ export function useFlowActions() {
           clientSecretBasic: formData.clientSecretBasic || undefined,
           clientIdPost: formData.clientIdPost || undefined,
           clientSecretPost: formData.clientSecretPost || undefined,
+          useProxy: formData.useProxy,
         })
 
         // Mark as complete with request params stored

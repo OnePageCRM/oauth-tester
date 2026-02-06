@@ -7,7 +7,7 @@ interface DiscoveryStepProps {
   step: DiscoveryStepType
   index: number
   onFork: () => void
-  onDiscover: () => void
+  onDiscover: (useProxy: boolean) => void
   onReset: () => void
 }
 
@@ -32,6 +32,8 @@ function formatValue(value: unknown): string {
 
 export function DiscoveryStep({ step, index, onFork, onDiscover, onReset }: DiscoveryStepProps) {
   const [isEditing, setIsEditing] = useState(false)
+  // Default: browser (false = no proxy) - discovery typically works from browser
+  const [useProxy, setUseProxy] = useState(false)
 
   const isComplete = step.status === 'complete'
   const isPending = step.status === 'pending'
@@ -43,12 +45,16 @@ export function DiscoveryStep({ step, index, onFork, onDiscover, onReset }: Disc
 
   const handleRefetch = () => {
     onReset()
-    onDiscover()
+    onDiscover(useProxy)
     setIsEditing(false)
   }
 
   const handleCancel = () => {
     setIsEditing(false)
+  }
+
+  const handleDiscover = () => {
+    onDiscover(useProxy)
   }
 
   const showForm = isPending || isError || isEditing
@@ -114,6 +120,25 @@ export function DiscoveryStep({ step, index, onFork, onDiscover, onReset }: Disc
         </div>
       ) : showForm ? (
         <div className="step-form">
+          <div className="fetch-mode-row">
+            <label>Fetch Via</label>
+            <div className="fetch-mode-toggle">
+              <button
+                type="button"
+                className={!useProxy ? 'active' : ''}
+                onClick={() => setUseProxy(false)}
+              >
+                Browser
+              </button>
+              <button
+                type="button"
+                className={useProxy ? 'active' : ''}
+                onClick={() => setUseProxy(true)}
+              >
+                Backend
+              </button>
+            </div>
+          </div>
           <div className="form-actions" style={{ marginLeft: 0 }}>
             {isEditing ? (
               <>
@@ -123,7 +148,7 @@ export function DiscoveryStep({ step, index, onFork, onDiscover, onReset }: Disc
                 </button>
               </>
             ) : (
-              <button onClick={onDiscover}>Fetch Metadata</button>
+              <button onClick={handleDiscover}>Fetch Metadata</button>
             )}
           </div>
         </div>

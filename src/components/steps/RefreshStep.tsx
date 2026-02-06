@@ -13,6 +13,7 @@ export interface RefreshFormData {
   clientSecretBasic: string
   clientIdPost: string
   clientSecretPost: string
+  useProxy: boolean
 }
 
 interface RefreshStepProps {
@@ -55,6 +56,11 @@ export function RefreshStep({
   const [clientSecretBasic, setClientSecretBasic] = useState('')
   const [clientIdPost, setClientIdPost] = useState('')
   const [clientSecretPost, setClientSecretPost] = useState('')
+  // Default: backend for confidential clients, browser for public clients
+  const [useProxy, setUseProxy] = useState(() => {
+    const authMethod = defaultAuthMethod ?? 'client_secret_basic'
+    return authMethod !== 'none'
+  })
 
   const isComplete = step.status === 'complete'
   const isPending = step.status === 'pending'
@@ -176,6 +182,9 @@ export function RefreshStep({
 
   const handleAuthMethodChange = (newMethod: string) => {
     setTokenEndpointAuthMethod(newMethod)
+    // Update default proxy setting based on auth method
+    // Public clients (none) can use browser, confidential clients should use backend
+    setUseProxy(newMethod !== 'none')
     // Clear all credential fields and pre-fill based on new method
     if (newMethod === 'client_secret_basic') {
       setClientIdBasic(defaultClientId ?? '')
@@ -216,6 +225,7 @@ export function RefreshStep({
       clientSecretBasic,
       clientIdPost,
       clientSecretPost,
+      useProxy,
     })
     setIsEditing(false)
   }
@@ -263,6 +273,26 @@ export function RefreshStep({
         </div>
       ) : showForm ? (
         <form onSubmit={handleSubmit} className="step-form">
+          <div className="fetch-mode-row">
+            <label>Fetch Via</label>
+            <div className="fetch-mode-toggle">
+              <button
+                type="button"
+                className={!useProxy ? 'active' : ''}
+                onClick={() => setUseProxy(false)}
+              >
+                Browser
+              </button>
+              <button
+                type="button"
+                className={useProxy ? 'active' : ''}
+                onClick={() => setUseProxy(true)}
+              >
+                Backend
+              </button>
+            </div>
+          </div>
+
           <div className="form-row">
             <label htmlFor="refresh-grant-type">Grant Type</label>
             <input

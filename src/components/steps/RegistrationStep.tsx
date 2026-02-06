@@ -12,7 +12,7 @@ interface RegistrationStepProps {
   step: RegistrationStepType
   index: number
   onFork: () => void
-  onRegister: (request: RegistrationRequest) => void
+  onRegister: (request: RegistrationRequest, useProxy: boolean) => void
   onManualCredentials: (credentials: ClientCredentials) => void
   onReset: () => void
   hasRegistrationEndpoint: boolean
@@ -139,6 +139,8 @@ export function RegistrationStep({
 }: RegistrationStepProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [mode, setMode] = useState<'dynamic' | 'manual'>(step.mode)
+  // Default: backend (true = proxy) for registration - typically has CORS issues
+  const [useProxy, setUseProxy] = useState(true)
 
   // Manual credentials state
   const [clientId, setClientId] = useState(step.credentials?.client_id ?? '')
@@ -187,7 +189,7 @@ export function RegistrationStep({
     if (isEditing) {
       onReset()
     }
-    onRegister(regRequest)
+    onRegister(regRequest, useProxy)
     setIsEditing(false)
   }
 
@@ -273,6 +275,27 @@ export function RegistrationStep({
 
           {mode === 'dynamic' ? (
             <form onSubmit={handleDynamicRegister} className="registration-form">
+              {/* Fetch mode toggle */}
+              <div className="fetch-mode-row">
+                <label>Fetch Via</label>
+                <div className="fetch-mode-toggle">
+                  <button
+                    type="button"
+                    className={!useProxy ? 'active' : ''}
+                    onClick={() => setUseProxy(false)}
+                  >
+                    Browser
+                  </button>
+                  <button
+                    type="button"
+                    className={useProxy ? 'active' : ''}
+                    onClick={() => setUseProxy(true)}
+                  >
+                    Backend
+                  </button>
+                </div>
+              </div>
+
               {/* client_name */}
               <div className="form-row">
                 <label htmlFor="client-name">Client Name</label>
