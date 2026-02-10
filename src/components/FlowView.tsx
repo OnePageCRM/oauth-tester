@@ -134,7 +134,10 @@ export function FlowView() {
           />
         )
       }
-      case 'refresh':
+      case 'refresh': {
+        // Effective scope: latest token response scope, or authorization step scope
+        const authStepForScope = activeFlow.steps.find((s) => s.type === 'authorization')
+        const effectiveScope = activeFlow.tokens?.scope ?? authStepForScope?.scope
         return (
           <RefreshStep
             key={step.id}
@@ -145,11 +148,13 @@ export function FlowView() {
             onReset={handleResetRefresh}
             onRepeat={handleAddRefreshStep}
             refreshToken={activeFlow.tokens?.refresh_token}
+            flowScope={effectiveScope}
             clientId={activeFlow.credentials?.client_id}
             clientSecret={activeFlow.credentials?.client_secret}
             tokenEndpointAuthMethod={activeFlow.credentials?.token_endpoint_auth_method}
           />
         )
+      }
       case 'introspect':
         return (
           <IntrospectStep

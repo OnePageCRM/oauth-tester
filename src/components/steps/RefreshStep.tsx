@@ -25,6 +25,7 @@ interface RefreshStepProps {
   onRepeat: () => void
   // Pre-fill values from flow state
   refreshToken?: string
+  flowScope?: string
   clientId?: string
   clientSecret?: string
   tokenEndpointAuthMethod?: string
@@ -38,6 +39,7 @@ export function RefreshStep({
   onReset: _onReset,
   onRepeat,
   refreshToken: defaultRefreshToken,
+  flowScope,
   clientId: defaultClientId,
   clientSecret: defaultClientSecret,
   tokenEndpointAuthMethod: defaultAuthMethod,
@@ -75,7 +77,7 @@ export function RefreshStep({
       void (async () => {
         setGrantType('refresh_token')
         setRefreshToken(defaultRefreshToken ?? '')
-        setScope('')
+        setScope(flowScope ?? '')
         setTokenEndpointAuthMethod(authMethod)
         // Pre-fill credentials based on auth method
         if (authMethod === 'client_secret_basic') {
@@ -105,6 +107,7 @@ export function RefreshStep({
     isPending,
     isError,
     defaultRefreshToken,
+    flowScope,
     defaultClientId,
     defaultClientSecret,
     defaultAuthMethod,
@@ -148,7 +151,7 @@ export function RefreshStep({
   const handleEdit = () => {
     setGrantType(step.grantType ?? 'refresh_token')
     setRefreshToken(step.refreshToken ?? defaultRefreshToken ?? '')
-    setScope(step.scope ?? '')
+    setScope(step.scope ?? flowScope ?? '')
     const authMethod = step.tokenEndpointAuthMethod ?? defaultAuthMethod ?? 'client_secret_basic'
     setTokenEndpointAuthMethod(authMethod)
     // Restore saved credentials or pre-fill based on auth method

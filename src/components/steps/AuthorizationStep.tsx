@@ -60,7 +60,7 @@ export function AuthorizationStep({
     setResponseType('code')
     setFormClientId(clientId ?? '')
     setRedirectUri(getCallbackUrl())
-    setScope(supportedScopes?.join(' ') ?? 'openid')
+    setScope(supportedScopes?.join(' ') ?? '')
     setState(newState)
     setCodeChallenge(pkce.code_challenge)
     setCodeChallengeMethod(pkce.code_challenge_method)
@@ -79,7 +79,7 @@ export function AuthorizationStep({
         setResponseType('code')
         setFormClientId(clientId ?? '')
         setRedirectUri(getCallbackUrl())
-        setScope(supportedScopes?.join(' ') ?? 'openid')
+        setScope(supportedScopes?.join(' ') ?? '')
         setState(newState)
         setCodeChallenge(pkce.code_challenge)
         setCodeChallengeMethod(pkce.code_challenge_method)
@@ -90,9 +90,13 @@ export function AuthorizationStep({
   }, [isPending, isError, clientId, supportedScopes])
 
   const handleEdit = async () => {
-    // When editing, regenerate PKCE and state
+    // When editing, regenerate PKCE and state but preserve user-entered scope
     setIsGenerating(true)
     await generateDefaults()
+    // Restore the scope that was used in the completed step
+    if (step.scope !== undefined) {
+      setScope(step.scope)
+    }
     setIsEditing(true)
   }
 
