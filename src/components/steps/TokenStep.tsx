@@ -22,6 +22,7 @@ interface TokenStepProps {
   onFork: () => void
   onExchange: (data: TokenFormData) => void
   onReset: () => void
+  onRestart?: () => void
   // Pre-fill values from flow state
   code?: string
   redirectUri?: string
@@ -37,6 +38,7 @@ export function TokenStep({
   onFork,
   onExchange,
   onReset,
+  onRestart,
   code: defaultCode,
   redirectUri: defaultRedirectUri,
   clientId: defaultClientId,
@@ -212,6 +214,7 @@ export function TokenStep({
       title="Token Exchange"
       onFork={onFork}
       onReset={isComplete && !isEditing ? handleEdit : undefined}
+      onRestart={isComplete && !isEditing ? onRestart : undefined}
     >
       {isComplete && step.tokens && !isEditing ? (
         <div className="metadata-grid">

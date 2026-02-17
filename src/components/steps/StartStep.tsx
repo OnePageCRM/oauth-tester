@@ -9,9 +9,10 @@ interface StartStepProps {
   onFork: () => void
   onSubmit: (serverUrl: string) => void
   onReset: () => void
+  onRestart?: () => void
 }
 
-export function StartStep({ step, index, onFork, onSubmit, onReset }: StartStepProps) {
+export function StartStep({ step, index, onFork, onSubmit, onReset, onRestart }: StartStepProps) {
   const [url, setUrl] = useState(step.serverUrl ?? '')
   const [isEditing, setIsEditing] = useState(false)
 
@@ -48,6 +49,7 @@ export function StartStep({ step, index, onFork, onSubmit, onReset }: StartStepP
       title="Start"
       onFork={onFork}
       onReset={isComplete && !isEditing ? handleEdit : undefined}
+      onRestart={isComplete && !isEditing ? onRestart : undefined}
     >
       {showForm ? (
         <form onSubmit={handleSubmit} className="step-form">

@@ -15,6 +15,7 @@ interface RegistrationStepProps {
   onRegister: (request: RegistrationRequest, useProxy: boolean) => void
   onManualCredentials: (credentials: ClientCredentials) => void
   onReset: () => void
+  onRestart?: () => void
   hasRegistrationEndpoint: boolean
 }
 
@@ -135,6 +136,7 @@ export function RegistrationStep({
   onRegister,
   onManualCredentials,
   onReset,
+  onRestart,
   hasRegistrationEndpoint,
 }: RegistrationStepProps) {
   const [isEditing, setIsEditing] = useState(false)
@@ -206,6 +208,7 @@ export function RegistrationStep({
       title="Registration"
       onFork={onFork}
       onReset={isComplete && !isEditing ? handleEdit : undefined}
+      onRestart={isComplete && !isEditing ? onRestart : undefined}
     >
       {isComplete && step.credentials && !isEditing ? (
         <div className="metadata-grid">

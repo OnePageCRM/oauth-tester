@@ -9,6 +9,7 @@ interface DiscoveryStepProps {
   onFork: () => void
   onDiscover: (useProxy: boolean) => void
   onReset: () => void
+  onRestart?: () => void
 }
 
 // Convert snake_case to Title Case
@@ -30,7 +31,14 @@ function formatValue(value: unknown): string {
   return String(value)
 }
 
-export function DiscoveryStep({ step, index, onFork, onDiscover, onReset }: DiscoveryStepProps) {
+export function DiscoveryStep({
+  step,
+  index,
+  onFork,
+  onDiscover,
+  onReset,
+  onRestart,
+}: DiscoveryStepProps) {
   const [isEditing, setIsEditing] = useState(false)
   // Default: browser (false = no proxy) - discovery typically works from browser
   const [useProxy, setUseProxy] = useState(false)
@@ -100,6 +108,7 @@ export function DiscoveryStep({ step, index, onFork, onDiscover, onReset }: Disc
       title="Discovery"
       onFork={onFork}
       onReset={isComplete && !isEditing ? handleEdit : undefined}
+      onRestart={isComplete && !isEditing ? onRestart : undefined}
     >
       {isComplete && step.metadata && !isEditing ? (
         <div className="metadata-grid">

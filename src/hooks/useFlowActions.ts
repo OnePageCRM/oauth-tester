@@ -7,8 +7,10 @@ import {
   buildAuthorizationUrl,
   exchangeToken,
   refreshToken,
+  getCallbackUrl,
   FetchError,
 } from '../services/oauth'
+import { generatePKCE, generateState } from '../services/pkce'
 import { ProxyFetchError } from '../services/proxy'
 import { saveRedirectState } from '../services/storage'
 import type {
@@ -18,6 +20,7 @@ import type {
   RegistrationStep,
   AuthorizationStep,
   CallbackStep,
+  TokenStep,
   RefreshStep,
   ClientCredentials,
   RegistrationRequest,
@@ -158,48 +161,53 @@ export function useFlowActions() {
   )
 
   // Handle Discovery step
-  const handleDiscover = useCallback(async (useProxy: boolean = false) => {
-    if (!activeFlow?.serverUrl) return
+  const handleDiscover = useCallback(
+    async (useProxy: boolean = false) => {
+      if (!activeFlow?.serverUrl) return
 
-    const discoveryStep = activeFlow.steps.find((s) => s.type === 'discovery')
-    if (!discoveryStep) return
+      const discoveryStep = activeFlow.steps.find((s) => s.type === 'discovery')
+      if (!discoveryStep) return
 
-    // Mark as in progress
-    updateStep(discoveryStep.id, { status: 'in_progress' })
+      // Mark as in progress
+      updateStep(discoveryStep.id, { status: 'in_progress' })
 
-    try {
-      const { metadata, exchange } = await discoverMetadata(activeFlow.serverUrl, useProxy)
+      try {
+        const { metadata, exchange } = await discoverMetadata(activeFlow.serverUrl, useProxy)
 
-      // Mark as complete with metadata (clear any previous error)
-      updateStep(discoveryStep.id, {
-        status: 'complete',
-        metadata,
-        httpExchange: exchange,
-        completedAt: Date.now(),
-        error: undefined,
-      } as Partial<Step>)
+        // Mark as complete with metadata (clear any previous error)
+        updateStep(discoveryStep.id, {
+          status: 'complete',
+          metadata,
+          httpExchange: exchange,
+          completedAt: Date.now(),
+          error: undefined,
+        } as Partial<Step>)
 
-      // Update flow state
-      updateFlow({ metadata })
+        // Update flow state
+        updateFlow({ metadata })
 
-      // Add registration step
-      const registrationStep: RegistrationStep = {
-        id: generateId(),
-        type: 'registration',
-        status: 'pending',
-        mode: metadata.registration_endpoint ? 'dynamic' : 'manual',
+        // Add registration step
+        const registrationStep: RegistrationStep = {
+          id: generateId(),
+          type: 'registration',
+          status: 'pending',
+          mode: metadata.registration_endpoint ? 'dynamic' : 'manual',
+        }
+        addStep(registrationStep)
+      } catch (error) {
+        const exchange =
+          error instanceof FetchError || error instanceof ProxyFetchError
+            ? error.exchange
+            : undefined
+        updateStep(discoveryStep.id, {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Discovery failed',
+          httpExchange: exchange,
+        } as Partial<Step>)
       }
-      addStep(registrationStep)
-    } catch (error) {
-      const exchange =
-        error instanceof FetchError || error instanceof ProxyFetchError ? error.exchange : undefined
-      updateStep(discoveryStep.id, {
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Discovery failed',
-        httpExchange: exchange,
-      } as Partial<Step>)
-    }
-  }, [activeFlow, updateStep, updateFlow, addStep])
+    },
+    [activeFlow, updateStep, updateFlow, addStep]
+  )
 
   // Reset Registration step
   const handleResetRegistration = useCallback(() => {
@@ -641,7 +649,7 @@ export function useFlowActions() {
     [activeFlow, updateStep, updateFlow]
   )
 
-  // Add a new refresh step (for repeating)
+  // Add a new refresh step
   const handleAddRefreshStep = useCallback(() => {
     if (!activeFlow) return
 
@@ -652,6 +660,141 @@ export function useFlowActions() {
     }
     addStep(newRefreshStep)
   }, [activeFlow, addStep])
+
+  // --- Restart handlers: reset step + immediately re-execute with same params ---
+
+  const handleRestartStart = useCallback(() => {
+    if (!activeFlow) return
+    const startStep = activeFlow.steps.find((s) => s.type === 'start')
+    if (!startStep?.serverUrl) return
+    const serverUrl = startStep.serverUrl
+    handleResetStart()
+    handleStartSubmit(serverUrl)
+  }, [activeFlow, handleResetStart, handleStartSubmit])
+
+  const handleRestartDiscovery = useCallback(() => {
+    if (!activeFlow) return
+    handleResetDiscovery()
+    handleDiscover()
+  }, [activeFlow, handleResetDiscovery, handleDiscover])
+
+  const handleRestartRegistration = useCallback(() => {
+    if (!activeFlow) return
+    const regStep = activeFlow.steps.find((s) => s.type === 'registration') as
+      | RegistrationStep
+      | undefined
+    if (!regStep) return
+
+    if (regStep.mode === 'manual' && regStep.credentials) {
+      const credentials: ClientCredentials = { ...regStep.credentials }
+      handleResetRegistration()
+      handleManualCredentials(credentials)
+    } else if (regStep.mode === 'dynamic' && regStep.httpExchange?.request.body) {
+      try {
+        const request = JSON.parse(regStep.httpExchange.request.body) as RegistrationRequest
+        handleResetRegistration()
+        handleRegister(request)
+      } catch {
+        // Can't reconstruct request, just reset
+        handleResetRegistration()
+      }
+    }
+  }, [activeFlow, handleResetRegistration, handleManualCredentials, handleRegister])
+
+  const handleRestartAuthorization = useCallback(async () => {
+    if (!activeFlow) return
+    const authStep = activeFlow.steps.find((s) => s.type === 'authorization') as
+      | AuthorizationStep
+      | undefined
+    if (!authStep) return
+
+    const pkce = await generatePKCE()
+    const newState = generateState()
+
+    handleResetAuthorization()
+    handleAuthorize({
+      responseType: authStep.responseType ?? 'code',
+      clientId: authStep.clientId ?? activeFlow.credentials?.client_id ?? '',
+      redirectUri: authStep.redirectUri ?? getCallbackUrl(),
+      scope: authStep.scope ?? '',
+      state: newState,
+      codeChallenge: pkce.code_challenge,
+      codeChallengeMethod: pkce.code_challenge_method,
+      codeVerifier: pkce.code_verifier,
+    })
+  }, [activeFlow, handleResetAuthorization, handleAuthorize])
+
+  const handleRestartToken = useCallback(() => {
+    if (!activeFlow) return
+    const tokenStep = activeFlow.steps.find((s) => s.type === 'token') as TokenStep | undefined
+    if (!tokenStep) return
+
+    const authMethod = tokenStep.tokenEndpointAuthMethod ?? 'client_secret_basic'
+    const formData = {
+      grantType: tokenStep.grantType ?? 'authorization_code',
+      code: tokenStep.code ?? '',
+      redirectUri: tokenStep.redirectUri ?? '',
+      codeVerifier: tokenStep.codeVerifier ?? '',
+      tokenEndpointAuthMethod: authMethod,
+      clientIdBasic: tokenStep.clientIdBasic ?? '',
+      clientSecretBasic: tokenStep.clientSecretBasic ?? '',
+      clientIdPost: tokenStep.clientIdPost ?? '',
+      clientSecretPost: tokenStep.clientSecretPost ?? '',
+      useProxy: authMethod !== 'none',
+    }
+
+    handleResetToken()
+    handleTokenExchange(formData)
+  }, [activeFlow, handleResetToken, handleTokenExchange])
+
+  const handleRestartRefresh = useCallback(
+    (stepId: string) => {
+      if (!activeFlow) return
+      const refreshStepData = activeFlow.steps.find((s) => s.id === stepId) as
+        | RefreshStep
+        | undefined
+      if (!refreshStepData) return
+
+      const stepIndex = activeFlow.steps.findIndex((s) => s.id === stepId)
+      if (stepIndex === -1) return
+
+      const authMethod = refreshStepData.tokenEndpointAuthMethod ?? 'client_secret_basic'
+      const formData: RefreshFormData = {
+        stepId,
+        grantType: refreshStepData.grantType ?? 'refresh_token',
+        refreshToken: refreshStepData.refreshToken ?? activeFlow.tokens?.refresh_token ?? '',
+        scope: refreshStepData.scope ?? '',
+        tokenEndpointAuthMethod: authMethod,
+        clientIdBasic: refreshStepData.clientIdBasic ?? '',
+        clientSecretBasic: refreshStepData.clientSecretBasic ?? '',
+        clientIdPost: refreshStepData.clientIdPost ?? '',
+        clientSecretPost: refreshStepData.clientSecretPost ?? '',
+        useProxy: authMethod !== 'none',
+      }
+
+      // Reset this specific refresh step by ID (not the generic reset which finds the first one)
+      updateStep(stepId, {
+        status: 'pending',
+        grantType: undefined,
+        refreshToken: undefined,
+        scope: undefined,
+        tokenEndpointAuthMethod: undefined,
+        clientIdBasic: undefined,
+        clientSecretBasic: undefined,
+        clientIdPost: undefined,
+        clientSecretPost: undefined,
+        tokenEndpoint: undefined,
+        tokens: undefined,
+        httpExchange: undefined,
+        completedAt: undefined,
+        error: undefined,
+      } as Partial<Step>)
+      truncateSteps(stepIndex)
+
+      handleRefresh(formData)
+    },
+    [activeFlow, updateStep, truncateSteps, handleRefresh]
+  )
 
   return {
     handleStartSubmit,
@@ -668,5 +811,11 @@ export function useFlowActions() {
     handleRefresh,
     handleResetRefresh,
     handleAddRefreshStep,
+    handleRestartStart,
+    handleRestartDiscovery,
+    handleRestartRegistration,
+    handleRestartAuthorization,
+    handleRestartToken,
+    handleRestartRefresh,
   }
 }

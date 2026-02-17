@@ -22,7 +22,7 @@ interface RefreshStepProps {
   onFork: () => void
   onRefresh: (data: RefreshFormData) => void
   onReset: () => void
-  onRepeat: () => void
+  onRestart: () => void
   // Pre-fill values from flow state
   refreshToken?: string
   flowScope?: string
@@ -37,7 +37,7 @@ export function RefreshStep({
   onFork,
   onRefresh,
   onReset: _onReset,
-  onRepeat,
+  onRestart,
   refreshToken: defaultRefreshToken,
   flowScope,
   clientId: defaultClientId,
@@ -243,7 +243,7 @@ export function RefreshStep({
       title="Token Refresh"
       onFork={onFork}
       onReset={isComplete && !isEditing ? handleEdit : undefined}
-      onRepeat={onRepeat}
+      onRestart={isComplete && !isEditing ? onRestart : undefined}
     >
       {isComplete && step.tokens && !isEditing ? (
         <div className="metadata-grid">

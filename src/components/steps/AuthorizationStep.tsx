@@ -22,6 +22,7 @@ interface AuthorizationStepProps {
   onFork: () => void
   onAuthorize: (data: AuthorizationFormData) => void
   onReset: () => void
+  onRestart?: () => void
   clientId?: string
   supportedScopes?: string[]
 }
@@ -32,6 +33,7 @@ export function AuthorizationStep({
   onFork,
   onAuthorize,
   onReset,
+  onRestart,
   clientId,
   supportedScopes,
 }: AuthorizationStepProps) {
@@ -136,6 +138,7 @@ export function AuthorizationStep({
       title="Authorization"
       onFork={onFork}
       onReset={isComplete && !isEditing ? handleEdit : undefined}
+      onRestart={isComplete && !isEditing ? onRestart : undefined}
     >
       {isComplete && !isEditing ? (
         <div className="metadata-grid">

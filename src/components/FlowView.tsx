@@ -31,7 +31,12 @@ export function FlowView() {
     handleResetToken,
     handleRefresh,
     handleResetRefresh,
-    handleAddRefreshStep,
+    handleRestartStart,
+    handleRestartDiscovery,
+    handleRestartRegistration,
+    handleRestartAuthorization,
+    handleRestartToken,
+    handleRestartRefresh,
   } = useFlowActions()
 
   if (!activeFlow) {
@@ -72,6 +77,7 @@ export function FlowView() {
             onFork={onFork}
             onSubmit={handleStartSubmit}
             onReset={handleResetStart}
+            onRestart={handleRestartStart}
           />
         )
       case 'discovery':
@@ -83,6 +89,7 @@ export function FlowView() {
             onFork={onFork}
             onDiscover={handleDiscover}
             onReset={handleResetDiscovery}
+            onRestart={handleRestartDiscovery}
           />
         )
       case 'registration':
@@ -95,6 +102,7 @@ export function FlowView() {
             onRegister={handleRegister}
             onManualCredentials={handleManualCredentials}
             onReset={handleResetRegistration}
+            onRestart={handleRestartRegistration}
             hasRegistrationEndpoint={!!activeFlow.metadata?.registration_endpoint}
           />
         )
@@ -107,6 +115,7 @@ export function FlowView() {
             onFork={onFork}
             onAuthorize={handleAuthorize}
             onReset={handleResetAuthorization}
+            onRestart={handleRestartAuthorization}
             clientId={activeFlow.credentials?.client_id}
             supportedScopes={activeFlow.metadata?.scopes_supported}
           />
@@ -125,6 +134,7 @@ export function FlowView() {
             onFork={onFork}
             onExchange={handleTokenExchange}
             onReset={handleResetToken}
+            onRestart={handleRestartToken}
             code={callbackStep?.status === 'complete' ? callbackStep.code : undefined}
             redirectUri={authStep?.redirectUri}
             clientId={authStep?.clientId ?? activeFlow.credentials?.client_id}
@@ -146,7 +156,7 @@ export function FlowView() {
             onFork={onFork}
             onRefresh={handleRefresh}
             onReset={handleResetRefresh}
-            onRepeat={handleAddRefreshStep}
+            onRestart={() => handleRestartRefresh(step.id)}
             refreshToken={activeFlow.tokens?.refresh_token}
             flowScope={effectiveScope}
             clientId={activeFlow.credentials?.client_id}
